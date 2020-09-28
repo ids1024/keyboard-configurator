@@ -4,6 +4,7 @@ name: ci
 
 jobs:
   windows-mingw32:
+    if: false
     runs-on: windows-latest
     steps:
     - uses: msys2/setup-msys2@v2
@@ -28,26 +29,71 @@ jobs:
           windows/keyboard-configurator.msi
           windows/out/
 
+  windows-mingw32-test:
+    if: false
+    runs-on: windows-latest
+    needs: windows-mingw32
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: keyboard-configurator-mingw32-${{ github.sha }}
+    - run: .\out\keyboard_color.exe --help-gtk
+
   macos:
     runs-on: macos-latest
     steps:
-    - run: brew install gtk+3 makeicns imagemagick
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/jhbuild
+        key: cache-jhbuild1
+    - uses: actions/cache@v2
+      with:
+        path: ~/gtk
+        key: cache-gtk1
+    - run: ps -ww -o pid= -o ppid= -o args=
+      shell: /Users/runner/work/keyboard-configurator/keyboard-configurator/.github/workflows/run-pty.py bash {0}
+#    - run: brew install gtk+3 makeicns imagemagick
     - run: npm install -g appdmg
-    #- run: echo "::add-path::$HOME/.new_local/bin"
-    #- run: |
-    #    curl https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/gtk-osx-setup.sh | sh
-    #    jhbuild bootstrap-gtk-osx
-    #    jhbuild build meta-gtk-osx-bootstrap meta-gtk-osx-gtk3
+    - run: sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/uninstall.sh)"
+    - run: echo "::add-path::$HOME/.new_local/bin"
+    - run: |
+        curl https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/gtk-osx-setup.sh -o gtk-osx-setup.sh
+        yes | bash gtk-osx-setup.sh
+      shell: /Users/runner/work/keyboard-configurator/keyboard-configurator/.github/workflows/run-pty.py bash {0}
+    - run: jhbuild bootstrap-gtk-osx
+      shell: /Users/runner/work/keyboard-configurator/keyboard-configurator/.github/workflows/run-pty.py bash {0}
+    - run: jhbuild build meta-gtk-osx-bootstrap meta-gtk-osx-gtk3
+      shell: /Users/runner/work/keyboard-configurator/keyboard-configurator/.github/workflows/run-pty.py bash {0}
     - run: cd && git clone https://gitlab.gnome.org/GNOME/gtk-mac-bundler && make -C gtk-mac-bundler install
     - run: echo "::add-path::$HOME/.local/bin"
-    - uses: actions/checkout@v2
-    - run: cargo build --examples
-    - run: cd macos && ./package.sh
-    - run: plutil macos/Info.plist
-    - uses: actions/upload-artifact@v2
+#    - run: cargo build --examples
+#    - run: cd macos && ./package.sh
+#    - run: plutil macos/Info.plist
+#    - uses: actions/upload-artifact@v2
+#      with:
+#        if-no-files-found: error
+#        name: keyboard-configurator-macos-${{ github.sha }}
+#        path: |
+#          macos/keyboard-configurator.dmg
+#          macos/System76KeyboardConfigurator.app
+
+  macos-test:
+    if: false
+    runs-on: macos-latest
+    needs: macos
+    steps:
+    - uses: actions/download-artifact@v2
       with:
-        if-no-files-found: error
         name: keyboard-configurator-macos-${{ github.sha }}
-        path: |
-          macos/keyboard-configurator.dmg
-          macos/System76KeyboardConfigurator.app
+    - run: sudo spctl --master-disable
+#    - run: cp -Rv System76KeyboardConfigurator.app /Applications
+#    - run: xattr -d com.apple.quarantine /Applications/System76KeyboardConfigurator.app
+#    - run: open -a System76KeyboardConfigurator --args --help-gtk
+#    - run: chmod +x System76KeyboardConfigurator.app/Contents/MacOS/keyboard-configurator
+#    - run: open System76KeyboardConfigurator.app --args --help-gtk
+    - run: rm -r System76KeyboardConfigurator.app
+    - run: mkdir mnt && hdiutil attach keyboard-configurator.dmg -mountpoint $PWD/mnt
+    - run: cp -Rv mnt/*.app .
+    - run: ./System76KeyboardConfigurator.app/Contents/MacOS/keyboard-configurator --help-gtk
+    - run: open System76KeyboardConfigurator.app --args --help-gtk
