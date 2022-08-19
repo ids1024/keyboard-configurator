@@ -1,6 +1,7 @@
 [
   {
     "label": "Alphabet keys",
+    "section": "basics",
     "cols": 9,
     "width": 1,
     "keys": [
@@ -112,6 +113,7 @@
   },
   {
     "label": "Number keys",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -159,6 +161,7 @@
   },
   {
     "label": "Modifier keys",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -198,6 +201,7 @@
   },
   {
     "label": "Actions",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -265,6 +269,7 @@
   },
   {
     "label": "Function keys",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -320,6 +325,7 @@
   },
   {
     "label": "Numpad",
+    "section": "basics",
     "cols": 6,
     "width": 1,
     "keys": [
@@ -395,6 +401,7 @@
   },
   {
     "label": "Symbols",
+    "section": "basics",
     "cols": 6,
     "width": 1,
     "keys": [
@@ -454,6 +461,7 @@
   },
   {
     "label": "Navigation",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -493,6 +501,7 @@
   },
   {
     "label": "Media",
+    "section": "basics",
     "cols": 3,
     "width": 1,
     "keys": [
@@ -524,6 +533,7 @@
   },
   {
     "label": "Controls",
+    "section": "basics",
     "cols": 4,
     "width": 2,
     "keys": [
@@ -571,6 +581,7 @@
   },
   {
     "label": "LED controls",
+    "section": "basics",
     "cols": 4,
     "width": 1,
     "keys": [
@@ -598,6 +609,7 @@
   },
   {
     "label": "Layer keys",
+    "section": "basics",
     "cols": 4,
     "width": 2,
     "keys": [
@@ -632,6 +644,62 @@
       {
         "keysym": "LAYER_SWITCH_4",
         "label": "Switch to\nLayer\u00a04"
+      }
+    ]
+  },
+  {
+    "label": "Additional Function Keys",
+    "section": "extras",
+    "cols": 6,
+    "width": 1,
+    "keys": [
+      {
+        "keysym": "F13",
+        "label": "F13"
+      },
+      {
+        "keysym": "F14",
+        "label": "F14"
+      },
+      {
+        "keysym": "F15",
+        "label": "F15"
+      },
+      {
+        "keysym": "F16",
+        "label": "F16"
+      },
+      {
+        "keysym": "F17",
+        "label": "F17"
+      },
+      {
+        "keysym": "F18",
+        "label": "F18"
+      },
+      {
+        "keysym": "F19",
+        "label": "F19"
+      },
+      {
+        "keysym": "F20",
+        "label": "F20"
+      },
+      {
+        "keysym": "F21",
+        "label": "F21"
+      },
+      {
+        "keysym": "F22",
+        "label": "F22"
+      },
+      {
+        "keysym": "F23",
+        "label": "F23"
+      },
+      {
+        "keysym": "F24",
+        "label": "F24"
       }
     ]
   }

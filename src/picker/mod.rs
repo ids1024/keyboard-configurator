@@ -15,6 +15,7 @@ mod picker_group;
 mod picker_group_box;
 mod picker_json;
 mod picker_key;
+mod tap_hold;
 
 use picker_group_box::PickerGroupBox;
 use picker_json::picker_json;
@@ -32,7 +33,7 @@ pub static SCANCODE_LABELS: Lazy<HashMap<String, String>> = Lazy::new(|| {
 
 #[derive(Default)]
 pub struct PickerInner {
-    group_box: DerefCell<PickerGroupBox>,
+    group_boxes: DerefCell<Vec<PickerGroupBox>>,
     keyboard: RefCell<Option<Keyboard>>,
 }
 
@@ -47,20 +48,43 @@ impl ObjectImpl for PickerInner {
     fn constructed(&self, picker: &Picker) {
         self.parent_constructed(picker);
 
-        let group_box = cascade! {
-            PickerGroupBox::new();
+        let basics_group_box = cascade! {
+            PickerGroupBox::new("basics");
             ..connect_key_pressed(clone!(@weak picker => move |name| {
                 picker.key_pressed(name)
             }));
         };
 
+        let extras_group_box = cascade! {
+            PickerGroupBox::new("extras");
+            ..connect_key_pressed(clone!(@weak picker => move |name| {
+                picker.key_pressed(name)
+            }));
+        };
+
+        // XXX translate
+        let stack = cascade! {
+            gtk::Stack::new();
+            ..add_titled(&basics_group_box, "basics", "Basics");
+            ..add_titled(&extras_group_box, "extras", "Extras");
+            ..add_titled(&tap_hold::tap_hold_box(), "tap-hold", "Tap-Hold");
+        };
+
+        let stack_switcher = cascade! {
+            gtk::StackSwitcher::new();
+            ..set_stack(Some(&stack));
+        };
+
         cascade! {
             picker;
-            ..add(&group_box);
+            ..set_orientation(gtk::Orientation::Vertical);
+            ..add(&stack_switcher);
+            ..add(&stack);
             ..show_all();
         };
 
-        self.group_box.set(group_box);
+        self.group_boxes
+            .set(vec![basics_group_box, extras_group_box]);
     }
 }
 
@@ -91,9 +115,9 @@ impl Picker {
 
         if let Some(kb) = &keyboard {
             // Check that scancode is available for the keyboard
-            self.inner()
-                .group_box
-                .set_key_visibility(|name| kb.has_scancode(name));
+            for group_box in self.inner().group_boxes.iter() {
+                group_box.set_key_visibility(|name| kb.has_scancode(name));
+            }
             kb.set_picker(Some(&self));
         }
 
@@ -101,7 +125,9 @@ impl Picker {
     }
 
     pub(crate) fn set_selected(&self, scancode_names: Vec<String>) {
-        self.inner().group_box.set_selected(scancode_names);
+        for group_box in self.inner().group_boxes.iter() {
+            group_box.set_selected(scancode_names.clone());
+        }
     }
 
     fn key_pressed(&self, name: String) {

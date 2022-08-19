@@ -42,50 +42,6 @@ impl ObjectSubclass for PickerGroupBoxInner {
 }
 
 impl ObjectImpl for PickerGroupBoxInner {
-    fn constructed(&self, widget: &PickerGroupBox) {
-        self.parent_constructed(widget);
-
-        let style_provider = cascade! {
-            gtk::CssProvider::new();
-            ..load_from_data(&PICKER_CSS.as_bytes()).expect("Failed to parse css");
-        };
-
-        let mut groups = Vec::new();
-        let mut keys = HashMap::new();
-
-        for json_group in picker_json() {
-            let mut group = PickerGroup::new(json_group.label, json_group.cols);
-
-            for json_key in json_group.keys {
-                let key = PickerKey::new(
-                    json_key.keysym.clone(),
-                    json_key.label,
-                    json_group.width,
-                    &style_provider,
-                );
-
-                group.add_key(key.clone());
-                keys.insert(json_key.keysym, key);
-            }
-
-            groups.push(group);
-        }
-
-        for group in &groups {
-            group.vbox.show();
-            group.vbox.set_parent(widget);
-        }
-
-        self.keys.set(keys);
-        self.groups.set(groups);
-
-        cascade! {
-            widget;
-            ..connect_signals();
-            ..show_all();
-        };
-    }
-
     fn signals() -> &'static [Signal] {
         static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
             vec![Signal::builder(
@@ -110,13 +66,13 @@ impl WidgetImpl for PickerGroupBoxInner {
             .iter()
             .map(|x| x.vbox.preferred_width().1)
             .max()
-            .unwrap();
+            .unwrap_or(0);
         let natural_width = self
             .groups
             .chunks(3)
             .map(|row| row.iter().map(|x| x.vbox.preferred_width().1).sum::<i32>())
             .max()
-            .unwrap()
+            .unwrap_or(0)
             + 2 * HSPACING;
         (minimum_width, natural_width)
     }
@@ -129,7 +85,7 @@ impl WidgetImpl for PickerGroupBoxInner {
                 row.iter()
                     .map(|x| x.vbox.preferred_height().1)
                     .max()
-                    .unwrap()
+                    .unwrap_or(0)
             })
             .sum::<i32>()
             + (rows.len() as i32 - 1) * VSPACING;
@@ -149,7 +105,7 @@ impl WidgetImpl for PickerGroupBoxInner {
                     + (row.len() as i32 - 1) * HSPACING
             })
             .max()
-            .unwrap();
+            .unwrap_or(0);
 
         let mut y = 0;
         for row in rows {
@@ -215,8 +171,49 @@ glib::wrapper! {
 }
 
 impl PickerGroupBox {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).unwrap()
+    pub fn new(section: &str) -> Self {
+        let widget: Self = glib::Object::new(&[]).unwrap();
+
+        let style_provider = cascade! {
+            gtk::CssProvider::new();
+            ..load_from_data(&PICKER_CSS.as_bytes()).expect("Failed to parse css");
+        };
+
+        let mut groups = Vec::new();
+        let mut keys = HashMap::new();
+
+        for json_group in picker_json() {
+            if json_group.section != section {
+                continue;
+            }
+
+            let mut group = PickerGroup::new(json_group.label, json_group.cols);
+
+            for json_key in json_group.keys {
+                let key = PickerKey::new(
+                    json_key.keysym.clone(),
+                    json_key.label,
+                    json_group.width,
+                    &style_provider,
+                );
+
+                group.add_key(key.clone());
+                keys.insert(json_key.keysym, key);
+            }
+
+            groups.push(group);
+        }
+
+        for group in &groups {
+            group.vbox.show();
+            group.vbox.set_parent(&widget);
+        }
+
+        widget.inner().keys.set(keys);
+        widget.inner().groups.set(groups);
+        widget.connect_signals();
+
+        widget
     }
 
     fn inner(&self) -> &PickerGroupBoxInner {
@@ -226,7 +223,7 @@ impl PickerGroupBox {
     fn connect_signals(&self) {
         let picker = self;
         for group in self.inner().groups.iter() {
-            for key in group.iter_keys() {
+            for key in group.keys() {
                 let button = &key.gtk;
                 let name = key.name.to_string();
                 button.connect_clicked(clone!(@weak picker => @default-panic, move |_| {
@@ -248,11 +245,13 @@ impl PickerGroupBox {
     }
 
     pub(crate) fn set_key_visibility<F: Fn(&str) -> bool>(&self, f: F) {
-        for key in self.inner().keys.values() {
-            key.gtk.set_visible(f(&key.name));
-        }
-
         for group in self.inner().groups.iter() {
+            let group_visible = group.keys().fold(false, |group_visible, key| {
+                key.gtk.set_visible(f(&key.name));
+                group_visible || key.gtk.get_visible()
+            });
+
+            group.vbox.set_visible(group_visible);
             group.invalidate_filter();
         }
     }

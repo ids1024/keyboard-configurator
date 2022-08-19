@@ -30,6 +30,7 @@ impl PickerKey {
             ..set_size_request(48 * width, 48);
             ..style_context().add_provider(style_provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
             ..add(&label);
+            ..show_all();
         };
 
         Rc::new(Self { name, gtk: button })
