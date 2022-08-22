@@ -702,5 +702,89 @@
         "label": "F24"
       }
     ]
+  },
+  {
+    "label": "Mouse Actions",
+    "section": "extras",
+    "cols": 5,
+    "width": 2,
+    "keys": [
+      {
+        "keysym": "MS_UP",
+        "label": "Mouse cursor up"
+      },
+      {
+        "keysym": "MS_DOWN",
+        "label": "Mouse cursor down"
+      },
+      {
+        "keysym": "MS_LEFT",
+        "label": "Mouse cursor left"
+      },
+      {
+        "keysym": "MS_RIGHT",
+        "label": "Mouse cursor right"
+      },
+      {
+        "keysym": "MS_BTN1",
+        "label": "Press button 1"
+      },
+      {
+        "keysym": "MS_BTN2",
+        "label": "Press button 2"
+      },
+      {
+        "keysym": "MS_BTN3",
+        "label": "Press button 3"
+      },
+      {
+        "keysym": "MS_BTN4",
+        "label": "Press button 4"
+      },
+      {
+        "keysym": "MS_BTN5",
+        "label": "Press button 5"
+      },
+      {
+        "keysym": "MS_BTN6",
+        "label": "Press button 6"
+      },
+      {
+        "keysym": "MS_BTN7",
+        "label": "Press button 7"
+      },
+      {
+        "keysym": "MS_BTN8",
+        "label": "Press button 8"
+      },
+      {
+        "keysym": "MS_WH_UP",
+        "label": "Move wheel up"
+      },
+      {
+        "keysym": "MS_WH_DOWN",
+        "label": "Move wheel down"
+      },
+      {
+        "keysym": "MS_WH_LEFT",
+        "label": "Move wheel left"
+      },
+      {
+        "keysym": "MS_WH_RIGHT",
+        "label": "Move wheel right"
+      },
+      {
+        "keysym": "MS_ACCEL0",
+        "label": "Set speed to 0"
+      },
+      {
+        "keysym": "MS_ACCEL1",
+        "label": "Set speed to 1"
+      },
+      {
+        "keysym": "MS_ACCEL2",
+        "label": "Set speed to 2"
+      }
+    ]
   }
 ]
