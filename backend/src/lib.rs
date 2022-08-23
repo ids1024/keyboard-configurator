@@ -21,6 +21,7 @@ mod color;
 mod daemon;
 mod deref_cell;
 mod key;
+mod keycode;
 mod keymap;
 mod layer;
 mod layout;
