@@ -32,6 +32,7 @@ pub struct PickerGroupBoxInner {
     groups: DerefCell<Vec<PickerGroup>>,
     keys: DerefCell<HashMap<String, Rc<PickerKey>>>,
     selected: RefCell<Vec<String>>,
+    event_controller_key: DerefCell<gtk::EventControllerKey>,
 }
 
 #[glib::object_subclass]
@@ -52,6 +53,20 @@ impl ObjectImpl for PickerGroupBoxInner {
             .build()]
         });
         SIGNALS.as_ref()
+    }
+
+    fn constructed(&self, widget: &Self::Type) {
+        widget.add_events(gdk::EventMask::KEY_PRESS_MASK);
+        // TODO need to be focused
+        // On button click, check mask
+        self.event_controller_key.set(cascade! {
+            gtk::EventControllerKey::new(widget);
+            ..connect_modifiers(|_, mods| {
+                let shift = mods.contains(gdk::ModifierType::SHIFT_MASK);
+                eprintln!("{:?}", shift);
+                true
+            });
+        });
     }
 }
 

@@ -89,6 +89,6 @@ fn parse(s: &str) -> Option<Keycode> {
     match tokens.next()? {
         "MT" => parse_mt(tokens),
         "LT" => parse_lt(tokens),
-        _ => None
+        _ => None,
     }
 }
