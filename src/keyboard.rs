@@ -308,7 +308,6 @@ impl Keyboard {
         self.layout().scancode_from_name(scancode_name).is_some()
     }
 
-    // XXX
     pub async fn keymap_set(&self, key_index: usize, layer: usize, scancode_name: &Keycode) {
         if let Err(err) = self.board().keys()[key_index]
             .set_scancode(layer, scancode_name)
@@ -597,7 +596,6 @@ impl Keyboard {
         for i in selected.iter() {
             let k = &keys[*i];
             debug!("{:#?}", k);
-            // XXX
             if let Some(layer) = self.layer() {
                 if let Some((_scancode, Some(scancode_name))) = k.get_scancode(layer) {
                     selected_scancodes.push(scancode_name);

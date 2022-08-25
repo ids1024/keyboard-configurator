@@ -11,6 +11,8 @@ const QK_MOD_TAP: u16 = 0x6000;
 const QK_MOD_TAP_MAX: u16 = 0x7FFF;
 const QK_LAYER_TAP: u16 = 0x4000;
 const QK_LAYER_TAP_MAX: u16 = 0x4FFF;
+const QK_MODS: u16 = 0x0100;
+const QK_MODS_MAX: u16 = 0x1FFF;
 
 pub struct Layout {
     /// Metadata for keyboard
@@ -140,8 +142,13 @@ impl Layout {
             let kc = scancode & 0xff;
             let kc_name = self.scancode_names.get(&kc)?;
             Some(Keycode::LT(layer, kc_name.clone()))
+        } else if scancode >= QK_MODS && scancode <= QK_MODS_MAX {
+            let mods = Mods::from_bits((scancode >> 8) & 0x1f)?;
+            let kc = scancode & 0xff;
+            let kc_name = self.scancode_names.get(&kc)?;
+            Some(Keycode::Basic(mods, kc_name.clone()))
         } else {
-            // XXX mods
+            // XXX single mod as part of mods?
             Some(Keycode::Basic(
                 Mods::empty(),
                 self.scancode_names.get(&scancode)?.clone(),
@@ -164,8 +171,15 @@ impl Layout {
                     None
                 }
             }
-            // XXX mods
-            Keycode::Basic(_mods, keycode_name) => self.keymap.get(keycode_name).copied(),
+            // XXX single mod as part of mods?
+            Keycode::Basic(mods, keycode_name) => {
+                if mods.is_empty() {
+                    self.keymap.get(keycode_name).copied()
+                } else {
+                    let kc = *self.keymap.get(keycode_name)?;
+                    Some((mods.bits() << 8) | (kc & 0xff))
+                }
+            }
         }
     }
 

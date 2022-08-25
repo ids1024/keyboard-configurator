@@ -44,7 +44,7 @@ impl Keycode {
         match tokens.next()? {
             "MT" => parse_mt(tokens),
             "LT" => parse_lt(tokens),
-            keycode => parse_basic(keycode, tokens),
+            keycode => parse_basic(tokenize(s)),
         }
     }
 
@@ -112,8 +112,8 @@ fn parse_mt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
     loop {
         mods |= Mods::from_mod_str(tokens.next()?)?;
         match tokens.next()? {
-            "," => {}
-            ")" => {
+            "|" => {}
+            "," => {
                 break;
             }
             _ => {
@@ -151,11 +151,33 @@ fn parse_lt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
     Some(Keycode::LT(layer, keycode))
 }
 
-// XXX handle mods
-fn parse_basic<'a>(keycode: &str, mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
-    let first_c = keycode.chars().next()?;
-    if !first_c.is_alphanumeric() || tokens.next().is_some() {
-        return None;
+// XXX limit to basic if there are mods?
+fn parse_basic<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
+    let mut mods = Mods::empty();
+    let mut keycode = None;
+
+    loop {
+        let token = tokens.next()?;
+        if let Some(mod_) = Mods::from_mod_str(token) {
+            mods |= mod_;
+        } else if keycode.is_none() && token.chars().next()?.is_alphanumeric() {
+            keycode = Some(token.to_string());
+        } else {
+            return None;
+        }
+        match tokens.next() {
+            Some("|") => {}
+            Some(_) => {
+                return None;
+            }
+            None => {
+                break;
+            }
+        }
     }
-    Some(Keycode::Basic(Mods::empty(), keycode.to_string()))
+
+    Some(Keycode::Basic(
+        mods,
+        keycode.unwrap_or_else(|| "NONE".to_string()),
+    ))
 }
