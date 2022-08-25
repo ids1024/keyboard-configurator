@@ -48,6 +48,10 @@ impl Keycode {
         }
     }
 
+    pub fn none() -> Self {
+        Self::Basic(Mods::empty(), "NONE".to_string())
+    }
+
     pub fn is_none(&self) -> bool {
         if let Keycode::Basic(mode, keycode) = self {
             mode.is_empty() && keycode.as_str() == "NONE"

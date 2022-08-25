@@ -494,14 +494,13 @@ impl Keyboard {
 
         for i in self.layout().f_keys() {
             let k = &self.board().keys()[key_indices[i]];
-            let layer0_keycode = k.get_scancode(0).unwrap().1;
-            let layer1_keycode = k.get_scancode(1).unwrap().1;
+            let layer0_keycode = k.get_scancode(0).unwrap().1.unwrap_or_else(Keycode::none);
+            let layer1_keycode = k.get_scancode(1).unwrap().1.unwrap_or_else(Keycode::none);
 
-            if layer1_keycode.map_or(false, |x| x.is_roll_over()) {
+            if layer1_keycode.is_roll_over() {
                 continue;
             }
 
-            /* XXX
             futures.push(Box::pin(async move {
                 if let Err(err) = k.set_scancode(0, &layer1_keycode).await {
                     error!("{}: {:?}", fl!("error-set-keymap"), err);
@@ -512,7 +511,6 @@ impl Keyboard {
                     error!("{}: {:?}", fl!("error-set-keymap"), err);
                 }
             }));
-            */
         }
 
         futures.collect::<()>().await;
