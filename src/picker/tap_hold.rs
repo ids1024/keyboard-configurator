@@ -73,6 +73,5 @@ pub fn tap_hold_box() -> gtk::Box {
             ..set_halign(gtk::Align::Start);
         });
         ..add(&picker_group_box);
-        // - populate from picker.json, only "basic"
     }
 }
