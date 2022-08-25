@@ -40,14 +40,20 @@ pub enum Keycode {
 }
 
 impl Keycode {
-    // XXX
     pub fn is_none(&self) -> bool {
-        false
+        if let Keycode::Basic(mode, Some(keycode)) = self {
+            mode.is_empty() && keycode.as_str() == "NONE"
+        } else {
+            false
+        }
     }
 
-    // XXX
     pub fn is_roll_over(&self) -> bool {
-        false
+        if let Keycode::Basic(mode, Some(keycode)) = self {
+            mode.is_empty() && keycode.as_str() == "ROLL_OVER"
+        } else {
+            false
+        }
     }
 }
 
