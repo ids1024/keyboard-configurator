@@ -39,6 +39,15 @@ pub enum Keycode {
 }
 
 impl Keycode {
+    pub fn parse(s: &str) -> Option<Self> {
+        let mut tokens = tokenize(s);
+        match tokens.next()? {
+            "MT" => parse_mt(tokens),
+            "LT" => parse_lt(tokens),
+            keycode => parse_basic(keycode, tokens),
+        }
+    }
+
     pub fn is_none(&self) -> bool {
         if let Keycode::Basic(mode, keycode) = self {
             mode.is_empty() && keycode.as_str() == "NONE"
@@ -53,6 +62,10 @@ impl Keycode {
         } else {
             false
         }
+    }
+
+    pub fn is_mod(&self) -> bool {
+        false // XXX
     }
 }
 
@@ -135,22 +148,10 @@ fn parse_lt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
 }
 
 // XXX handle mods
-fn parse_basic<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
-    let keycode = tokens.next()?;
+fn parse_basic<'a>(keycode: &str, mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
     let first_c = keycode.chars().next()?;
     if !first_c.is_alphanumeric() || tokens.next().is_some() {
         return None;
     }
     Some(Keycode::Basic(Mods::empty(), keycode.to_string()))
-}
-
-// XXX result
-// Need to recurse handing `|`?
-fn parse(s: &str) -> Option<Keycode> {
-    let mut tokens = tokenize(s);
-    match tokens.next()? {
-        "MT" => parse_mt(tokens),
-        "LT" => parse_lt(tokens),
-        _ => None,
-    }
 }

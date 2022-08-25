@@ -328,7 +328,6 @@ impl Keyboard {
         // TODO: Ideally don't want this function to be O(Keys^2)
         // TODO: Make sure it doesn't panic with invalid json with invalid indexes?
 
-        /* XXX
         if keymap.model != self.board().model() {
             show_error_dialog(
                 &self.window().unwrap(),
@@ -357,12 +356,17 @@ impl Keyboard {
 
         for (k, v) in &keymap.map {
             for (layer, scancode_name) in v.iter().enumerate() {
+                let keycode = match Keycode::parse(scancode_name) {
+                    Some(keycode) => keycode,
+                    None => {
+                        error!("Unrecognized keycode: '{}'", scancode_name);
+                        continue;
+                    } // XXX
+                };
+
                 let n = key_indices[&k];
                 futures.push(Box::pin(async move {
-                    if let Err(err) = self.board().keys()[n]
-                        .set_scancode(layer, scancode_name)
-                        .await
-                    {
+                    if let Err(err) = self.board().keys()[n].set_scancode(layer, &keycode).await {
                         error!("{}: {:?}", fl!("error-set-keymap"), err);
                     }
                 }));
@@ -400,7 +404,6 @@ impl Keyboard {
         }
 
         futures.collect::<()>().await;
-        */
     }
 
     fn import(&self) {
