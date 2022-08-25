@@ -258,7 +258,7 @@ impl PickerGroupBox {
 
     fn get_button(&self, scancode_name: &Keycode) -> Option<&gtk::Button> {
         // XXX mods, etc.
-        if let Keycode::Basic(_, Some(scancode_name)) = scancode_name {
+        if let Keycode::Basic(_, scancode_name) = scancode_name {
             self.inner().keys.get(scancode_name).map(|k| &k.gtk)
         } else {
             None

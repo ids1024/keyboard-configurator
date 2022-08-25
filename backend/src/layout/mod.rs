@@ -136,7 +136,7 @@ impl Layout {
         } else {
             Some(Keycode::Basic(
                 Mods::empty(),
-                self.scancode_names.get(&scancode).cloned(),
+                self.scancode_names.get(&scancode)?.clone(),
             ))
         }
     }
@@ -148,7 +148,7 @@ impl Layout {
                 let kc = *self.keymap.get(keycode_name)?;
                 Some(QK_MOD_TAP | ((mods.bits() & 0x1f) << 8) | (kc & 0xff))
             }
-            Keycode::Basic(_mods, Some(keycode_name)) => self.keymap.get(keycode_name).copied(),
+            Keycode::Basic(_mods, keycode_name) => self.keymap.get(keycode_name).copied(),
             _ => None, // XXX
         }
     }

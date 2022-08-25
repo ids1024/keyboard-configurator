@@ -33,15 +33,14 @@ impl Mods {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub enum Keycode {
-    // KC_NONE?
-    Basic(Mods, Option<String>),
+    Basic(Mods, String),
     MT(Mods, String),
     LT(usize, String),
 }
 
 impl Keycode {
     pub fn is_none(&self) -> bool {
-        if let Keycode::Basic(mode, Some(keycode)) = self {
+        if let Keycode::Basic(mode, keycode) = self {
             mode.is_empty() && keycode.as_str() == "NONE"
         } else {
             false
@@ -49,7 +48,7 @@ impl Keycode {
     }
 
     pub fn is_roll_over(&self) -> bool {
-        if let Keycode::Basic(mode, Some(keycode)) = self {
+        if let Keycode::Basic(mode, keycode) = self {
             mode.is_empty() && keycode.as_str() == "ROLL_OVER"
         } else {
             false
@@ -142,7 +141,7 @@ fn parse_basic<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode>
     if !first_c.is_alphanumeric() || tokens.next().is_some() {
         return None;
     }
-    Some(Keycode::Basic(Mods::empty(), Some(keycode.to_string())))
+    Some(Keycode::Basic(Mods::empty(), keycode.to_string()))
 }
 
 // XXX result

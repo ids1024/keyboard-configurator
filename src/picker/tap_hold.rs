@@ -5,8 +5,8 @@ use gtk::{
     prelude::*,
 };
 
-use backend::{Keycode, Mods};
 use super::picker_group_box::PickerGroupBox;
+use backend::{Keycode, Mods};
 
 // XXX translate
 static MODIFIERS: &[&str] = &[
@@ -35,7 +35,7 @@ pub fn tap_hold_box() -> gtk::Box {
         ..connect_key_pressed(move |name| {
         });
         // Correct?
-        ..set_key_visibility(|name| layout.scancode_from_name(&Keycode::Basic(Mods::empty(), Some(name.to_string()))).map_or(false, |code| code <= 0xff));
+        ..set_key_visibility(|name| layout.scancode_from_name(&Keycode::Basic(Mods::empty(), name.to_string())).map_or(false, |code| code <= 0xff));
     };
 
     let modifier_button_box = cascade! {

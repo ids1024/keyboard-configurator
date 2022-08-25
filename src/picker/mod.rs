@@ -116,7 +116,9 @@ impl Picker {
         if let Some(kb) = &keyboard {
             // Check that scancode is available for the keyboard
             for group_box in self.inner().group_boxes.iter() {
-                group_box.set_key_visibility(|name| kb.has_scancode(&Keycode::Basic(Mods::empty(), Some(name.to_string()))));
+                group_box.set_key_visibility(|name| {
+                    kb.has_scancode(&Keycode::Basic(Mods::empty(), name.to_string()))
+                });
             }
             kb.set_picker(Some(&self));
         }
@@ -144,7 +146,7 @@ impl Picker {
             for i in kb.selected().iter() {
                 let i = *i;
                 futures.push(clone!(@strong kb, @strong name => async move {
-                    kb.keymap_set(i, layer, &Keycode::Basic(Mods::empty(), Some(name))).await;
+                    kb.keymap_set(i, layer, &Keycode::Basic(Mods::empty(), name)).await;
                 }));
             }
             glib::MainContext::default().spawn_local(async { futures.collect::<()>().await });

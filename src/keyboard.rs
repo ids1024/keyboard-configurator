@@ -16,7 +16,7 @@ use std::{
 };
 
 use crate::{show_error_dialog, Backlight, KeyboardLayer, MainWindow, Page, Picker, Testing};
-use backend::{Board, DerefCell, Keycode, KeyMap, Layout, Mode};
+use backend::{Board, DerefCell, KeyMap, Keycode, Layout, Mode};
 use widgets::SelectedKeys;
 
 #[derive(Default)]
