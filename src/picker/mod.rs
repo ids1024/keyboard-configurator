@@ -107,6 +107,22 @@ impl WidgetImpl for PickerInner {
         *self.event_controller_key.borrow_mut() = window.map(|window| {
             cascade! {
                  gtk::EventControllerKey::new(&window);
+                 ..connect_key_pressed(clone!(@weak widget => @default-return true, move |_, keyval, _, mods| {
+                     let key = gdk::keys::Key::from(keyval);
+                     if key == gdk::keys::constants::Shift_L || key == gdk::keys::constants::Shift_R {
+                         println!("Shift"); // XXX what if only one is held?
+                     }
+                     true
+                 }));
+                 ..connect_key_released(clone!(@weak widget => move |_, keyval, _, mods| {
+                     let key = gdk::keys::Key::from(keyval);
+                     if key == gdk::keys::constants::Shift_L || key == gdk::keys::constants::Shift_R {
+                         println!("Unshift"); // XXX what if only one is held?
+                     }
+                 }));
+                 ..connect_focus_out(clone!(@weak widget => move |_| {
+                     println!("Unfocus");
+                 }));
                  ..connect_modifiers(clone!(@weak widget => @default-return true, move |_, mods| {
                      println!("Mods: {:?}", mods);
                      let shift = mods.contains(gdk::ModifierType::SHIFT_MASK);
@@ -220,7 +236,18 @@ impl Picker {
         for group_box in self.inner().group_boxes.iter() {
             // TODO: What to allow?
             group_box.set_key_sensitivity(|name| {
-                if ["LEFT_SHIFT", "RIGHT_SHIFT", "LEFT_ALT", "RIGHT_ALT", "LEFT_CTRL", "RIGHT_CTRL", "LEFT_SUPER", "RIGHT_SUPER"].contains(&name) {
+                if [
+                    "LEFT_SHIFT",
+                    "RIGHT_SHIFT",
+                    "LEFT_ALT",
+                    "RIGHT_ALT",
+                    "LEFT_CTRL",
+                    "RIGHT_CTRL",
+                    "LEFT_SUPER",
+                    "RIGHT_SUPER",
+                ]
+                .contains(&name)
+                {
                     allow_mods
                 } else {
                     allow_basic
