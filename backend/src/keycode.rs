@@ -2,13 +2,60 @@
 // serialize (Display?)/format
 // serde: serialize/deserialize as string
 
-type Mod = String;
+use bitflags::bitflags;
 
-enum Keycode {
+bitflags! {
+    pub struct Mods: u16 {
+        const CTRL = 0x1;
+        const SHIFT = 0x2;
+        const ALT = 0x4;
+        const SUPER = 0x8;
+        const RIGHT = 0x10;
+    }
+}
+
+impl Mods {
+    // Convert single modifier from name
+    fn from_mod_str(s: &str) -> Option<Self> {
+        match s {
+            "LEFT_CTRL" => Some(Self::CTRL),
+            "LEFT_SHIFT" => Some(Self::SHIFT),
+            "LEFT_ALT" => Some(Self::ALT),
+            "LEFT_SUPER" => Some(Self::SUPER),
+            "RIGHT_CTRL" => Some(Self::RIGHT | Self::CTRL),
+            "RIGHT_SHIFT" => Some(Self::RIGHT | Self::SHIFT),
+            "RIGHT_ALT" => Some(Self::RIGHT | Self::ALT),
+            "RIGHT_SUPER" => Some(Self::RIGHT | Self::SUPER),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub enum Keycode {
     // KC_NONE?
-    Basic(Vec<Mod>, Option<String>),
-    MT(Vec<Mod>, String),
+    Basic(Mods, Option<String>),
+    MT(Mods, String),
     LT(usize, String),
+}
+
+impl Keycode {
+    // XXX
+    pub fn is_none(&self) -> bool {
+        false
+    }
+
+    // XXX
+    pub fn is_roll_over(&self) -> bool {
+        false
+    }
+}
+
+impl std::fmt::Display for Keycode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // XXX
+        write!(f, "{:?}", self)
+    }
 }
 
 const SEPARATORS: &[char] = &[',', '|', '(', ')'];
@@ -39,9 +86,9 @@ fn parse_mt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
         return None;
     }
 
-    let mut mods = Vec::new();
+    let mut mods = Mods::empty();
     loop {
-        mods.push(tokens.next()?.to_string());
+        mods |= Mods::from_mod_str(tokens.next()?)?;
         match tokens.next()? {
             "," => {}
             ")" => {
@@ -80,6 +127,16 @@ fn parse_lt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
     }
 
     Some(Keycode::LT(layer, keycode))
+}
+
+// XXX handle mods
+fn parse_basic<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
+    let keycode = tokens.next()?;
+    let first_c = keycode.chars().next()?;
+    if !first_c.is_alphanumeric() || tokens.next().is_some() {
+        return None;
+    }
+    Some(Keycode::Basic(Mods::empty(), Some(keycode.to_string())))
 }
 
 // XXX result

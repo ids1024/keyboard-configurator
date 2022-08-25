@@ -63,10 +63,13 @@ impl Page {
         match self {
             Page::Layer1 | Page::Layer2 | Page::Layer3 | Page::Layer4 => {
                 let scancode_name = key.get_scancode(self.layer().unwrap()).unwrap().1;
+                /* XXX
                 SCANCODE_LABELS
                     .get(&scancode_name)
-                    .unwrap_or(&scancode_name)
+                    .unwrap_or(&scancode_name.map_or_else(String::new, |x| x.to_string()))
                     .into()
+                */
+                format!("{:?}", scancode_name)
             }
             Page::Keycaps => key.physical_name.clone(),
             Page::Logical => key.logical_name.clone(),

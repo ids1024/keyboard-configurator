@@ -8,7 +8,7 @@ use gtk::{
 use once_cell::sync::Lazy;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use backend::DerefCell;
+use backend::{DerefCell, Keycode};
 
 use super::{picker_group::PickerGroup, picker_json::picker_json, picker_key::PickerKey};
 
@@ -31,7 +31,7 @@ button {
 pub struct PickerGroupBoxInner {
     groups: DerefCell<Vec<PickerGroup>>,
     keys: DerefCell<HashMap<String, Rc<PickerKey>>>,
-    selected: RefCell<Vec<String>>,
+    selected: RefCell<Vec<Keycode>>,
     event_controller_key: DerefCell<gtk::EventControllerKey>,
 }
 
@@ -242,6 +242,7 @@ impl PickerGroupBox {
                 let button = &key.gtk;
                 let name = key.name.to_string();
                 button.connect_clicked(clone!(@weak picker => @default-panic, move |_| {
+                    // XXX somehow detect if shift is held?
                     picker.emit_by_name::<()>("key-pressed", &[&name]);
                 }));
             }
@@ -255,10 +256,16 @@ impl PickerGroupBox {
         })
     }
 
-    fn get_button(&self, scancode_name: &str) -> Option<&gtk::Button> {
-        self.inner().keys.get(scancode_name).map(|k| &k.gtk)
+    fn get_button(&self, scancode_name: &Keycode) -> Option<&gtk::Button> {
+        // XXX mods, etc.
+        if let Keycode::Basic(_, Some(scancode_name)) = scancode_name {
+            self.inner().keys.get(scancode_name).map(|k| &k.gtk)
+        } else {
+            None
+        }
     }
 
+    // XXX need to enable/disable features; show/hide just plain keycodes
     pub(crate) fn set_key_visibility<F: Fn(&str) -> bool>(&self, f: F) {
         for group in self.inner().groups.iter() {
             let group_visible = group.keys().fold(false, |group_visible, key| {
@@ -271,7 +278,7 @@ impl PickerGroupBox {
         }
     }
 
-    pub(crate) fn set_selected(&self, scancode_names: Vec<String>) {
+    pub(crate) fn set_selected(&self, scancode_names: Vec<Keycode>) {
         let mut selected = self.inner().selected.borrow_mut();
 
         for i in selected.iter() {
