@@ -6,11 +6,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use once_cell::sync::Lazy;
-use std::{
-    cell::{Cell, RefCell},
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use backend::{DerefCell, Keycode};
 
@@ -36,8 +32,6 @@ pub struct PickerGroupBoxInner {
     groups: DerefCell<Vec<PickerGroup>>,
     keys: DerefCell<HashMap<String, Rc<PickerKey>>>,
     selected: RefCell<Vec<Keycode>>,
-    event_controller_key: RefCell<Option<gtk::EventControllerKey>>,
-    shift: Cell<bool>,
 }
 
 #[glib::object_subclass]
@@ -52,7 +46,7 @@ impl ObjectImpl for PickerGroupBoxInner {
         static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
             vec![Signal::builder(
                 "key-pressed",
-                &[String::static_type().into(), bool::static_type().into()],
+                &[String::static_type().into()],
                 glib::Type::UNIT.into(),
             )
             .build()]
@@ -151,27 +145,6 @@ impl WidgetImpl for PickerGroupBoxInner {
         let window = gdk::Window::new(widget.parent_window().as_ref(), &attrs);
         widget.register_window(&window);
         widget.set_window(&window);
-
-        let window = widget
-            .toplevel()
-            .and_then(|x| x.downcast::<gtk::Window>().ok());
-        *self.event_controller_key.borrow_mut() = window.map(|window| {
-            cascade! {
-                 gtk::EventControllerKey::new(&window);
-                 ..connect_modifiers(clone!(@weak widget => @default-return true, move |_, mods| {
-                     let shift = mods.contains(gdk::ModifierType::SHIFT_MASK);
-                     if shift != widget.inner().shift.get() {
-                        widget.inner().shift.set(shift);
-                        widget.invalidate_sensitivity();
-                     }
-                     true
-                 }));
-            }
-        });
-    }
-
-    fn unrealize(&self, widget: &Self::Type) {
-        *self.event_controller_key.borrow_mut() = None;
     }
 }
 
@@ -255,18 +228,15 @@ impl PickerGroupBox {
                 let name = key.name.to_string();
                 button.connect_clicked(clone!(@weak picker => @default-panic, move |_| {
                     // XXX somehow detect if shift is held?
-                    picker.emit_by_name::<()>("key-pressed", &[&name, &picker.inner().shift.get()]);
+                    picker.emit_by_name::<()>("key-pressed", &[&name]);
                 }));
             }
         }
     }
 
-    pub fn connect_key_pressed<F: Fn(String, bool) + 'static>(&self, cb: F) -> SignalHandlerId {
+    pub fn connect_key_pressed<F: Fn(String) + 'static>(&self, cb: F) -> SignalHandlerId {
         self.connect_local("key-pressed", false, move |values| {
-            cb(
-                values[1].get::<String>().unwrap(),
-                values[2].get::<bool>().unwrap(),
-            );
+            cb(values[1].get::<String>().unwrap());
             None
         })
     }
@@ -293,10 +263,9 @@ impl PickerGroupBox {
         }
     }
 
-    fn invalidate_sensitivity(&self) {
-        let shift = self.inner().shift.get();
-        for (_, key) in self.inner().keys.iter() {
-            key.gtk.set_sensitive(shift);
+    pub(crate) fn set_key_sensitivity<F: Fn(&str) -> bool>(&self, f: F) {
+        for key in self.inner().keys.values() {
+            key.gtk.set_sensitive(f(&key.name));
         }
     }
 

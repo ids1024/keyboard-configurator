@@ -1,12 +1,16 @@
 use cascade::cascade;
 use futures::{prelude::*, stream::FuturesUnordered};
 use gtk::{
+    gdk,
     glib::{self, clone},
     prelude::*,
     subclass::prelude::*,
 };
 use once_cell::sync::Lazy;
-use std::{cell::RefCell, collections::HashMap};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+};
 
 use crate::Keyboard;
 use backend::{DerefCell, Keycode, Mods};
@@ -35,6 +39,9 @@ pub static SCANCODE_LABELS: Lazy<HashMap<String, String>> = Lazy::new(|| {
 pub struct PickerInner {
     group_boxes: DerefCell<Vec<PickerGroupBox>>,
     keyboard: RefCell<Option<Keyboard>>,
+    event_controller_key: RefCell<Option<gtk::EventControllerKey>>,
+    selected: RefCell<Vec<Keycode>>,
+    shift: Cell<bool>,
 }
 
 #[glib::object_subclass]
@@ -50,14 +57,14 @@ impl ObjectImpl for PickerInner {
 
         let basics_group_box = cascade! {
             PickerGroupBox::new("basics");
-            ..connect_key_pressed(clone!(@weak picker => move |name, _shift| {
+            ..connect_key_pressed(clone!(@weak picker => move |name| {
                 picker.key_pressed(name)
             }));
         };
 
         let extras_group_box = cascade! {
             PickerGroupBox::new("extras");
-            ..connect_key_pressed(clone!(@weak picker => move |name, _shift| {
+            ..connect_key_pressed(clone!(@weak picker => move |name| {
                 picker.key_pressed(name)
             }));
         };
@@ -90,7 +97,35 @@ impl ObjectImpl for PickerInner {
 
 impl BoxImpl for PickerInner {}
 
-impl WidgetImpl for PickerInner {}
+impl WidgetImpl for PickerInner {
+    fn realize(&self, widget: &Self::Type) {
+        self.parent_realize(widget);
+
+        let window = widget
+            .toplevel()
+            .and_then(|x| x.downcast::<gtk::Window>().ok());
+        *self.event_controller_key.borrow_mut() = window.map(|window| {
+            cascade! {
+                 gtk::EventControllerKey::new(&window);
+                 ..connect_modifiers(clone!(@weak widget => @default-return true, move |_, mods| {
+                     println!("Mods: {:?}", mods);
+                     let shift = mods.contains(gdk::ModifierType::SHIFT_MASK);
+                     //println!("Shift: {}", shift);
+                     if shift != widget.inner().shift.get() {
+                        widget.inner().shift.set(shift);
+                        widget.invalidate_sensitivity();
+                     }
+                     true
+                 }));
+            }
+        });
+    }
+
+    fn unrealize(&self, widget: &Self::Type) {
+        self.parent_unrealize(widget);
+        *self.event_controller_key.borrow_mut() = None;
+    }
+}
 
 impl ContainerImpl for PickerInner {}
 
@@ -130,6 +165,7 @@ impl Picker {
         for group_box in self.inner().group_boxes.iter() {
             group_box.set_selected(scancode_names.clone());
         }
+        *self.inner().selected.borrow_mut() = scancode_names;
     }
 
     fn key_pressed(&self, name: String) {
@@ -141,15 +177,56 @@ impl Picker {
         };
         let layer = kb.layer();
 
+        let shift = self.inner().shift.get();
+
         if let Some(layer) = layer {
             let futures = FuturesUnordered::new();
             for i in kb.selected().iter() {
                 let i = *i;
+                // TODO handle shift
                 futures.push(clone!(@strong kb, @strong name => async move {
                     kb.keymap_set(i, layer, &Keycode::Basic(Mods::empty(), name)).await;
                 }));
             }
             glib::MainContext::default().spawn_local(async { futures.collect::<()>().await });
+        }
+    }
+
+    fn invalidate_sensitivity(&self) {
+        let shift = self.inner().shift.get();
+
+        let mut allow_mods = true;
+        let mut allow_basic = true;
+        let mut allow_non_basic = true;
+
+        if shift {
+            let selected = self.inner().selected.borrow();
+            if selected.len() == 1 {
+                match &selected[0] {
+                    Keycode::Basic(mods, keycode) => {
+                        // Allow mods only if `keycode` is really basic?
+                        allow_basic = keycode == "NONE";
+                        allow_non_basic = false;
+                    }
+                    Keycode::MT(..) | Keycode::LT(..) => {
+                        allow_mods = false;
+                        allow_basic = false;
+                        allow_non_basic = false;
+                    }
+                }
+            }
+        }
+
+        for group_box in self.inner().group_boxes.iter() {
+            // TODO: What to allow?
+            group_box.set_key_sensitivity(|name| {
+                if ["LEFT_SHIFT", "RIGHT_SHIFT", "LEFT_ALT", "RIGHT_ALT", "LEFT_CTRL", "RIGHT_CTRL", "LEFT_SUPER", "RIGHT_SUPER"].contains(&name) {
+                    allow_mods
+                } else {
+                    allow_basic
+                }
+                // XXX non-basic?
+            });
         }
     }
 }
