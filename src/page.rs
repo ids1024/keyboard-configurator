@@ -1,6 +1,6 @@
 use crate::fl;
 use crate::picker::SCANCODE_LABELS;
-use backend::Key;
+use backend::{Key, Keycode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Page {
@@ -63,12 +63,14 @@ impl Page {
         match self {
             Page::Layer1 | Page::Layer2 | Page::Layer3 | Page::Layer4 => {
                 let scancode_name = key.get_scancode(self.layer().unwrap()).unwrap().1;
-                /* XXX
-                SCANCODE_LABELS
-                    .get(&scancode_name)
-                    .unwrap_or(&scancode_name.map_or_else(String::new, |x| x.to_string()))
-                    .into()
-                */
+                if let Some(Keycode::Basic(mods, keycode)) = &scancode_name {
+                    if mods.is_empty() {
+                        if let Some(label) = SCANCODE_LABELS.get(keycode) {
+                            return label.clone();
+                        }
+                    }
+                    // TODO
+                }
                 format!("{:?}", scancode_name)
             }
             Page::Keycaps => key.physical_name.clone(),
