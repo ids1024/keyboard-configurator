@@ -5,7 +5,7 @@ mod physical_layout;
 pub use self::meta::Meta;
 pub(crate) use physical_layout::{PhysicalLayout, PhysicalLayoutKey};
 
-use crate::{KeyMap, Keycode};
+use crate::{KeyMap, Keycode, Mods};
 
 const QK_MOD_TAP: u16 = 0x6000;
 const QK_MOD_TAP_MAX: u16 = 0x7FFF;
@@ -127,14 +127,30 @@ impl Layout {
 
     /// Get the scancode number corresponding to a name
     pub fn scancode_to_name(&self, scancode: u16) -> Option<Keycode> {
-        // XXX
-        None
+        // XXX only on QMK?
+        if scancode >= QK_MOD_TAP && scancode <= QK_MOD_TAP_MAX {
+            let mods = Mods::from_bits((scancode >> 8) & 0x1f)?;
+            let kc = scancode & 0xff;
+            let kc_name = self.scancode_names.get(&kc)?;
+            Some(Keycode::MT(mods, kc_name.clone()))
+        } else {
+            Some(Keycode::Basic(
+                Mods::empty(),
+                self.scancode_names.get(&scancode).cloned(),
+            ))
+        }
     }
 
     /// Get the name corresponding to a scancode number
     pub fn scancode_from_name(&self, name: &Keycode) -> Option<u16> {
-        // XXX
-        None
+        match name {
+            Keycode::MT(mods, keycode_name) => {
+                let kc = *self.keymap.get(keycode_name)?;
+                Some(QK_MOD_TAP | ((mods.bits() & 0x1f) << 8) | (kc & 0xff))
+            }
+            Keycode::Basic(_mods, Some(keycode_name)) => self.keymap.get(keycode_name).copied(),
+            _ => None, // XXX
+        }
     }
 
     pub fn f_keys(&self) -> impl Iterator<Item = &str> {
