@@ -50,14 +50,14 @@ impl ObjectImpl for PickerInner {
 
         let basics_group_box = cascade! {
             PickerGroupBox::new("basics");
-            ..connect_key_pressed(clone!(@weak picker => move |name| {
+            ..connect_key_pressed(clone!(@weak picker => move |name, _shift| {
                 picker.key_pressed(name)
             }));
         };
 
         let extras_group_box = cascade! {
             PickerGroupBox::new("extras");
-            ..connect_key_pressed(clone!(@weak picker => move |name| {
+            ..connect_key_pressed(clone!(@weak picker => move |name, _shift| {
                 picker.key_pressed(name)
             }));
         };

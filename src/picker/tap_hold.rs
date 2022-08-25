@@ -32,7 +32,7 @@ pub fn tap_hold_box() -> gtk::Box {
 
     let picker_group_box = cascade! {
         PickerGroupBox::new("basics");
-        ..connect_key_pressed(move |name| {
+        ..connect_key_pressed(move |name, _shift| {
         });
         // Correct?
         ..set_key_visibility(|name| layout.scancode_from_name(&Keycode::Basic(Mods::empty(), name.to_string())).map_or(false, |code| code <= 0xff));
