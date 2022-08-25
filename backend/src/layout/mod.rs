@@ -9,6 +9,8 @@ use crate::{KeyMap, Keycode, Mods};
 
 const QK_MOD_TAP: u16 = 0x6000;
 const QK_MOD_TAP_MAX: u16 = 0x7FFF;
+const QK_LAYER_TAP: u16 = 0x4000;
+const QK_LAYER_TAP_MAX: u16 = 0x4FFF;
 
 pub struct Layout {
     /// Metadata for keyboard
@@ -133,7 +135,13 @@ impl Layout {
             let kc = scancode & 0xff;
             let kc_name = self.scancode_names.get(&kc)?;
             Some(Keycode::MT(mods, kc_name.clone()))
+        } else if scancode >= QK_LAYER_TAP && scancode <= QK_LAYER_TAP_MAX {
+            let layer = ((scancode >> 8) & 0xf) as u8;
+            let kc = scancode & 0xff;
+            let kc_name = self.scancode_names.get(&kc)?;
+            Some(Keycode::LT(layer, kc_name.clone()))
         } else {
+            // XXX mods
             Some(Keycode::Basic(
                 Mods::empty(),
                 self.scancode_names.get(&scancode)?.clone(),
@@ -146,10 +154,18 @@ impl Layout {
         match name {
             Keycode::MT(mods, keycode_name) => {
                 let kc = *self.keymap.get(keycode_name)?;
-                Some(QK_MOD_TAP | ((mods.bits() & 0x1f) << 8) | (kc & 0xff))
+                Some(QK_MOD_TAP | (mods.bits() << 8) | (kc & 0xff))
             }
+            Keycode::LT(layer, keycode_name) => {
+                let kc = *self.keymap.get(keycode_name)?;
+                if *layer < 8 {
+                    Some(QK_LAYER_TAP | (u16::from(*layer) << 8) | (kc & 0xFF))
+                } else {
+                    None
+                }
+            }
+            // XXX mods
             Keycode::Basic(_mods, keycode_name) => self.keymap.get(keycode_name).copied(),
-            _ => None, // XXX
         }
     }
 

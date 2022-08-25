@@ -35,7 +35,7 @@ impl Mods {
 pub enum Keycode {
     Basic(Mods, String),
     MT(Mods, String),
-    LT(usize, String),
+    LT(u8, String),
 }
 
 impl Keycode {
