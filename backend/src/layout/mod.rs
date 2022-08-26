@@ -148,11 +148,12 @@ impl Layout {
             let kc_name = self.scancode_names.get(&kc)?;
             Some(Keycode::Basic(mods, kc_name.clone()))
         } else {
-            // XXX single mod as part of mods?
-            Some(Keycode::Basic(
-                Mods::empty(),
-                self.scancode_names.get(&scancode)?.clone(),
-            ))
+            let kc_name = self.scancode_names.get(&scancode)?;
+            if let Some(mods) = Mods::from_mod_str(kc_name) {
+                Some(Keycode::Basic(mods, "NONE".to_string()))
+            } else {
+                Some(Keycode::Basic(Mods::empty(), kc_name.clone()))
+            }
         }
     }
 
@@ -171,10 +172,11 @@ impl Layout {
                     None
                 }
             }
-            // XXX single mod as part of mods?
             Keycode::Basic(mods, keycode_name) => {
                 if mods.is_empty() {
                     self.keymap.get(keycode_name).copied()
+                } else if let Some(mod_name) = mods.as_mod_str() {
+                    self.keymap.get(mod_name).copied()
                 } else {
                     let kc = *self.keymap.get(keycode_name)?;
                     Some((mods.bits() << 8) | (kc & 0xff))

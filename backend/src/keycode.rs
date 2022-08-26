@@ -16,7 +16,7 @@ bitflags! {
 
 impl Mods {
     // Convert single modifier from name
-    fn from_mod_str(s: &str) -> Option<Self> {
+    pub(crate) fn from_mod_str(s: &str) -> Option<Self> {
         match s {
             "LEFT_CTRL" => Some(Self::CTRL),
             "LEFT_SHIFT" => Some(Self::SHIFT),
@@ -26,6 +26,21 @@ impl Mods {
             "RIGHT_SHIFT" => Some(Self::RIGHT | Self::SHIFT),
             "RIGHT_ALT" => Some(Self::RIGHT | Self::ALT),
             "RIGHT_SUPER" => Some(Self::RIGHT | Self::SUPER),
+            _ => None,
+        }
+    }
+
+    // Convert to single modifier
+    pub(crate) fn as_mod_str(self) -> Option<&'static str> {
+        match self {
+            Self::CTRL => Some("LEFT_CTRL"),
+            Self::SHIFT => Some("LEFT_SHIFT"),
+            Self::ALT => Some("LEFT_ALT"),
+            Self::SUPER => Some("LEFT_SUPER"),
+            Self::RIGHT | Self::CTRL => Some("RIGHT_CTRL"),
+            Self::RIGHT | Self::SHIFT => Some("RIGHT_SHIFT"),
+            Self::RIGHT | Self::ALT => Some("RIGHT_ALT"),
+            Self::RIGHT | Self::SUPER => Some("RIGHT_SUPER"),
             _ => None,
         }
     }
