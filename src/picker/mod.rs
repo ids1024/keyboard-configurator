@@ -74,7 +74,7 @@ impl ObjectImpl for PickerInner {
             gtk::Stack::new();
             ..add_titled(&basics_group_box, "basics", "Basics");
             ..add_titled(&extras_group_box, "extras", "Extras");
-            ..add_titled(&tap_hold::tap_hold_box(), "tap-hold", "Tap-Hold");
+            ..add_titled(&tap_hold::TapHold::new(), "tap-hold", "Tap-Hold");
         };
 
         let stack_switcher = cascade! {
