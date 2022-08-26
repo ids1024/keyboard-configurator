@@ -22,7 +22,7 @@ bitflags! {
 
 impl Mods {
     // Convert single modifier from name
-    pub(crate) fn from_mod_str(s: &str) -> Option<Self> {
+    pub fn from_mod_str(s: &str) -> Option<Self> {
         match s {
             "LEFT_CTRL" => Some(Self::CTRL),
             "LEFT_SHIFT" => Some(Self::SHIFT),

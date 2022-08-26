@@ -6,26 +6,20 @@ use gtk::{
     subclass::prelude::*,
 };
 
-use super::picker_group_box::PickerGroupBox;
+use super::{picker_group_box::PickerGroupBox, SCANCODE_LABELS};
 use backend::{Keycode, Mods};
 
-// XXX translate
 static MODIFIERS: &[&str] = &[
-    "Left Shift",
-    "Left Control",
-    "Left Super",
-    "Left Alt",
-    "Right Shift",
-    "Right Control",
-    "Right Super",
-    "Right Alt",
+    "LEFT_SHIFT",
+    "LEFT_CTRL",
+    "LEFT_SUPER",
+    "LEFT_ALT",
+    "RIGHT_SHIFT",
+    "RIGHT_CTRL",
+    "RIGHT_SUPER",
+    "RIGHT_ALT",
 ];
-static LAYERS: &[&str] = &[
-    "Access Layer 1",
-    "Access Layer 2",
-    "Access Layer 3",
-    "Access Layer 4",
-];
+static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCESS_4"];
 
 #[derive(Default)]
 pub struct TapHoldInner;
@@ -55,14 +49,16 @@ impl ObjectImpl for TapHoldInner {
             gtk::Box::new(gtk::Orientation::Horizontal, 0);
         };
         for i in MODIFIERS {
-            modifier_button_box.add(&gtk::Button::with_label(i));
+            let label = SCANCODE_LABELS.get(*i).unwrap();
+            modifier_button_box.add(&gtk::Button::with_label(label));
         }
 
         let layer_button_box = cascade! {
             gtk::Box::new(gtk::Orientation::Horizontal, 0);
         };
         for i in LAYERS {
-            layer_button_box.add(&gtk::Button::with_label(i));
+            let label = SCANCODE_LABELS.get(*i).unwrap();
+            layer_button_box.add(&gtk::Button::with_label(label));
         }
 
         // TODO: select monifier/layer; multiple select; when both are selected, set keycode
