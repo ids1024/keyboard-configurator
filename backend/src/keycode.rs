@@ -10,7 +10,13 @@ bitflags! {
         const SHIFT = 0x2;
         const ALT = 0x4;
         const SUPER = 0x8;
+
         const RIGHT = 0x10;
+
+        const RIGHT_CTRL = Self::RIGHT.bits | Self::CTRL.bits;
+        const RIGHT_SHIFT = Self::RIGHT.bits | Self::SHIFT.bits;
+        const RIGHT_ALT = Self::RIGHT.bits | Self::ALT.bits;
+        const RIGHT_SUPER = Self::RIGHT.bits | Self::SUPER.bits;
     }
 }
 
@@ -22,10 +28,10 @@ impl Mods {
             "LEFT_SHIFT" => Some(Self::SHIFT),
             "LEFT_ALT" => Some(Self::ALT),
             "LEFT_SUPER" => Some(Self::SUPER),
-            "RIGHT_CTRL" => Some(Self::RIGHT | Self::CTRL),
-            "RIGHT_SHIFT" => Some(Self::RIGHT | Self::SHIFT),
-            "RIGHT_ALT" => Some(Self::RIGHT | Self::ALT),
-            "RIGHT_SUPER" => Some(Self::RIGHT | Self::SUPER),
+            "RIGHT_CTRL" => Some(Self::RIGHT_CTRL),
+            "RIGHT_SHIFT" => Some(Self::RIGHT_SHIFT),
+            "RIGHT_ALT" => Some(Self::RIGHT_ALT),
+            "RIGHT_SUPER" => Some(Self::RIGHT_SUPER),
             _ => None,
         }
     }
@@ -37,12 +43,18 @@ impl Mods {
             Self::SHIFT => Some("LEFT_SHIFT"),
             Self::ALT => Some("LEFT_ALT"),
             Self::SUPER => Some("LEFT_SUPER"),
-            Self::RIGHT | Self::CTRL => Some("RIGHT_CTRL"),
-            Self::RIGHT | Self::SHIFT => Some("RIGHT_SHIFT"),
-            Self::RIGHT | Self::ALT => Some("RIGHT_ALT"),
-            Self::RIGHT | Self::SUPER => Some("RIGHT_SUPER"),
+            Self::RIGHT_CTRL => Some("RIGHT_CTRL"),
+            Self::RIGHT_SHIFT => Some("RIGHT_SHIFT"),
+            Self::RIGHT_ALT => Some("RIGHT_ALT"),
+            Self::RIGHT_SUPER => Some("RIGHT_SUPER"),
             _ => None,
         }
+    }
+
+    pub fn mod_names(self) -> impl Iterator<Item = &'static str> {
+        [Self::CTRL, Self::SHIFT, Self::ALT, Self::SUPER]
+            .iter()
+            .filter_map(move |i| (self & (*i | Self::RIGHT)).as_mod_str())
     }
 }
 

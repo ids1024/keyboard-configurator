@@ -62,16 +62,13 @@ impl Page {
     pub fn get_label(&self, key: &Key) -> String {
         match self {
             Page::Layer1 | Page::Layer2 | Page::Layer3 | Page::Layer4 => {
-                let scancode_name = key.get_scancode(self.layer().unwrap()).unwrap().1;
-                if let Some(Keycode::Basic(mods, keycode)) = &scancode_name {
-                    if mods.is_empty() {
-                        if let Some(label) = SCANCODE_LABELS.get(keycode) {
-                            return label.clone();
-                        }
+                let (scancode, scancode_name) = key.get_scancode(self.layer().unwrap()).unwrap();
+                match scancode_name {
+                    Some(keycode) => {
+                        keycode_label(&keycode).unwrap_or_else(|| format!("{:?}", keycode))
                     }
-                    // TODO
+                    None => format!("{}", scancode),
                 }
-                format!("{:?}", scancode_name)
             }
             Page::Keycaps => key.physical_name.clone(),
             Page::Logical => key.logical_name.clone(),
@@ -84,5 +81,31 @@ impl Page {
 impl Default for Page {
     fn default() -> Self {
         Self::Layer1
+    }
+}
+
+fn keycode_label(keycode: &Keycode) -> Option<String> {
+    if let Keycode::Basic(mods, keycode) = keycode {
+        if mods.is_empty() {
+            SCANCODE_LABELS.get(keycode).cloned()
+        } else {
+            let mut label = String::new();
+            for name in mods.mod_names() {
+                let mod_label = SCANCODE_LABELS.get(name)?;
+                if !label.is_empty() {
+                    label.push_str(" + ");
+                }
+                label.push_str(mod_label);
+            }
+            if keycode != "NONE" {
+                let keycode_label = SCANCODE_LABELS.get(keycode)?;
+                label.push_str(" + ");
+                label.push_str(keycode_label);
+            }
+            Some(label)
+        }
+    } else {
+        // TODO
+        None
     }
 }
