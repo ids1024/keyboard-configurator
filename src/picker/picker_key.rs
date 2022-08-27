@@ -10,12 +10,7 @@ pub(super) struct PickerKey {
 }
 
 impl PickerKey {
-    pub(super) fn new<P: IsA<gtk::StyleProvider>>(
-        name: String,
-        text: String,
-        width: i32,
-        style_provider: &P,
-    ) -> Rc<Self> {
+    pub(super) fn new(name: String, text: String, width: i32) -> Rc<Self> {
         let label = cascade! {
             gtk::Label::new(Some(&text));
             ..set_line_wrap(true);
@@ -27,8 +22,8 @@ impl PickerKey {
 
         let button = cascade! {
             gtk::Button::new();
+            ..style_context().add_class("picker-key");
             ..set_size_request(48 * width, 48);
-            ..style_context().add_provider(style_provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
             ..add(&label);
             ..show_all();
         };

@@ -174,11 +174,6 @@ impl PickerGroupBox {
     pub fn new(section: &str) -> Self {
         let widget: Self = glib::Object::new(&[]).unwrap();
 
-        let style_provider = cascade! {
-            gtk::CssProvider::new();
-            ..load_from_data(&PICKER_CSS.as_bytes()).expect("Failed to parse css");
-        };
-
         let mut groups = Vec::new();
         let mut keys = HashMap::new();
 
@@ -190,12 +185,7 @@ impl PickerGroupBox {
             let mut group = PickerGroup::new(json_group.label, json_group.cols);
 
             for json_key in json_group.keys {
-                let key = PickerKey::new(
-                    json_key.keysym.clone(),
-                    json_key.label,
-                    json_group.width,
-                    &style_provider,
-                );
+                let key = PickerKey::new(json_key.keysym.clone(), json_key.label, json_group.width);
 
                 group.add_key(key.clone());
                 keys.insert(json_key.keysym, key);
