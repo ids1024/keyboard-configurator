@@ -48,9 +48,9 @@ glib::wrapper! {
 }
 
 impl PickerKey {
-    pub fn new(name: String, text: String, width: i32) -> Self {
+    pub fn new(name: &str, text: &str, width: i32) -> Self {
         let widget: Self = glib::Object::new(&[]).unwrap();
-        widget.inner().name.set(name);
+        widget.inner().name.set(name.to_string());
         widget.inner().label.set_label(&text);
         widget.set_size_request(48 * width, 48);
         widget
@@ -63,5 +63,13 @@ impl PickerKey {
     /// Symbolic name of the key
     pub fn name(&self) -> &str {
         &*self.inner().name
+    }
+
+    pub fn set_selected(&self, selected: bool) {
+        if selected {
+            self.style_context().add_class("selected");
+        } else {
+            self.style_context().remove_class("selected");
+        }
     }
 }

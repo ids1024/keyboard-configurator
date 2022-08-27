@@ -174,7 +174,7 @@ impl PickerGroupBox {
             let mut group = PickerGroup::new(json_group.label, json_group.cols);
 
             for json_key in json_group.keys {
-                let key = PickerKey::new(json_key.keysym.clone(), json_key.label, json_group.width);
+                let key = PickerKey::new(&json_key.keysym, &json_key.label, json_group.width);
 
                 group.add_key(key.clone());
                 keys.insert(json_key.keysym, key);
@@ -220,10 +220,10 @@ impl PickerGroupBox {
         })
     }
 
-    fn get_button(&self, scancode_name: &Keycode) -> Option<&gtk::Button> {
+    fn get_button(&self, scancode_name: &Keycode) -> Option<&PickerKey> {
         // XXX mods, etc.
         if let Keycode::Basic(_, scancode_name) = scancode_name {
-            self.inner().keys.get(scancode_name).map(|k| k.upcast_ref())
+            self.inner().keys.get(scancode_name)
         } else {
             None
         }
@@ -253,7 +253,7 @@ impl PickerGroupBox {
 
         for i in selected.iter() {
             if let Some(button) = self.get_button(i) {
-                button.style_context().remove_class("selected");
+                button.set_selected(false);
             }
         }
 
@@ -261,7 +261,7 @@ impl PickerGroupBox {
 
         for i in selected.iter() {
             if let Some(button) = self.get_button(i) {
-                button.style_context().add_class("selected");
+                button.set_selected(true);
             }
         }
     }

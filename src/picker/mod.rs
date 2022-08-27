@@ -24,6 +24,7 @@ mod tap_hold;
 use picker_group_box::PickerGroupBox;
 use picker_json::picker_json;
 use picker_key::PickerKey;
+use tap_hold::TapHold;
 
 pub static SCANCODE_LABELS: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let mut labels = HashMap::new();
@@ -42,6 +43,7 @@ pub struct PickerInner {
     event_controller_key: RefCell<Option<gtk::EventControllerKey>>,
     selected: RefCell<Vec<Keycode>>,
     shift: Cell<bool>,
+    tap_hold: DerefCell<TapHold>,
 }
 
 #[glib::object_subclass]
@@ -99,6 +101,7 @@ impl ObjectImpl for PickerInner {
 
         self.group_boxes
             .set(vec![basics_group_box, extras_group_box]);
+        self.tap_hold.set(tap_hold);
     }
 }
 
@@ -188,6 +191,7 @@ impl Picker {
         for group_box in self.inner().group_boxes.iter() {
             group_box.set_selected(scancode_names.clone());
         }
+        self.inner().tap_hold.set_selected(scancode_names.clone());
         *self.inner().selected.borrow_mut() = scancode_names;
     }
 

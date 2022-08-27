@@ -8,8 +8,8 @@ use gtk::{
 use once_cell::sync::Lazy;
 use std::cell::{Cell, RefCell};
 
-use super::{picker_group_box::PickerGroupBox, SCANCODE_LABELS};
-use backend::{Keycode, Mods};
+use super::{picker_group_box::PickerGroupBox, PickerKey, SCANCODE_LABELS};
+use backend::{DerefCell, Keycode, Mods};
 
 static MODIFIERS: &[&str] = &[
     "LEFT_SHIFT",
@@ -27,6 +27,7 @@ static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCE
 pub struct TapHoldInner {
     mods: Cell<Mods>,
     keycode: RefCell<Option<String>>,
+    mod_buttons: DerefCell<Vec<PickerKey>>,
 }
 
 #[glib::object_subclass]
@@ -67,26 +68,30 @@ impl ObjectImpl for TapHoldInner {
         let modifier_button_box = cascade! {
             gtk::Box::new(gtk::Orientation::Horizontal, 0);
         };
+        let mut mod_buttons = Vec::new();
         for i in MODIFIERS {
             let label = SCANCODE_LABELS.get(*i).unwrap();
             let mod_ = Mods::from_mod_str(*i).unwrap();
-            modifier_button_box.add(&cascade! {
-                gtk::Button::with_label(label);
+            let button = cascade! {
+                PickerKey::new(i, label, 2);
                 ..connect_clicked(clone!(@weak widget => move |_| {
                     // XXX shift self
                     // XXX mark selected
                     widget.inner().mods.set(mod_);
                     widget.update();
                 }));
-            });
+            };
+            modifier_button_box.add(&button);
+            mod_buttons.push(button);
         }
+        self.mod_buttons.set(mod_buttons);
 
         let layer_button_box = cascade! {
             gtk::Box::new(gtk::Orientation::Horizontal, 0);
         };
         for i in LAYERS {
             let label = SCANCODE_LABELS.get(*i).unwrap();
-            layer_button_box.add(&gtk::Button::with_label(label));
+            layer_button_box.add(&PickerKey::new(i, label, 2));
         }
 
         // TODO: select monifier/layer; multiple select; when both are selected, set keycode
@@ -144,10 +149,34 @@ impl TapHold {
         }
     }
 
+    // XXX naming vs set_selected
     pub fn connect_selected<F: Fn(Keycode) + 'static>(&self, cb: F) -> glib::SignalHandlerId {
         self.connect_local("selected", false, move |values| {
             cb(values[1].get::<Keycode>().unwrap());
             None
         })
+    }
+
+    pub(crate) fn set_selected(&self, scancode_names: Vec<Keycode>) {
+        // XXX how to handle > 1?
+        let (mods, keycode) = if scancode_names.len() == 1 {
+            if let Keycode::MT(mods, keycode) = &scancode_names[0] {
+                (mods.clone(), Some(keycode))
+            } else {
+                (Mods::empty(), None)
+            }
+        } else {
+            (Mods::empty(), None)
+        };
+
+        for i in self.inner().mod_buttons.iter() {
+            // XXX left vs right
+            let mod_ = Mods::from_mod_str(i.name()).unwrap();
+            i.set_selected(
+                mods.contains(mod_) && (mods.contains(Mods::RIGHT) == mod_.contains(Mods::RIGHT)),
+            );
+        }
+
+        // set_selected on group box
     }
 }
