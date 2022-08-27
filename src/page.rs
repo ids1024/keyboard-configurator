@@ -84,11 +84,30 @@ impl Default for Page {
     }
 }
 
+// TODO: represent mod-tap/layer-tap by rendering button with a seperator?
 fn keycode_label(keycode: &Keycode) -> Option<String> {
-    if let Keycode::Basic(mods, keycode) = keycode {
-        if mods.is_empty() {
-            SCANCODE_LABELS.get(keycode).cloned()
-        } else {
+    match keycode {
+        Keycode::Basic(mods, keycode) => {
+            if mods.is_empty() {
+                SCANCODE_LABELS.get(keycode).cloned()
+            } else {
+                let mut label = String::new();
+                for name in mods.mod_names() {
+                    let mod_label = SCANCODE_LABELS.get(name)?;
+                    if !label.is_empty() {
+                        label.push_str(" + ");
+                    }
+                    label.push_str(mod_label);
+                }
+                if keycode != "NONE" {
+                    let keycode_label = SCANCODE_LABELS.get(keycode)?;
+                    label.push_str(" + ");
+                    label.push_str(keycode_label);
+                }
+                Some(label)
+            }
+        }
+        Keycode::MT(mods, keycode) => {
             let mut label = String::new();
             for name in mods.mod_names() {
                 let mod_label = SCANCODE_LABELS.get(name)?;
@@ -97,15 +116,12 @@ fn keycode_label(keycode: &Keycode) -> Option<String> {
                 }
                 label.push_str(mod_label);
             }
-            if keycode != "NONE" {
-                let keycode_label = SCANCODE_LABELS.get(keycode)?;
-                label.push_str(" + ");
-                label.push_str(keycode_label);
-            }
+            let keycode_label = SCANCODE_LABELS.get(keycode)?;
+            label.push('\n');
+            label.push_str(keycode_label);
             Some(label)
         }
-    } else {
         // TODO
-        None
+        Keycode::LT(_layer, _keycode) => None,
     }
 }
