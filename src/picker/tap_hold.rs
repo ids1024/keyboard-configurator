@@ -5,6 +5,7 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
+use std::cell::Cell;
 
 use super::{picker_group_box::PickerGroupBox, SCANCODE_LABELS};
 use backend::{Keycode, Mods};
@@ -22,7 +23,9 @@ static MODIFIERS: &[&str] = &[
 static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCESS_4"];
 
 #[derive(Default)]
-pub struct TapHoldInner;
+pub struct TapHoldInner {
+    mods: Cell<Mods>,
+}
 
 #[glib::object_subclass]
 impl ObjectSubclass for TapHoldInner {
@@ -50,7 +53,14 @@ impl ObjectImpl for TapHoldInner {
         };
         for i in MODIFIERS {
             let label = SCANCODE_LABELS.get(*i).unwrap();
-            modifier_button_box.add(&gtk::Button::with_label(label));
+            let mod_ = Mods::from_mod_str(*i).unwrap();
+            modifier_button_box.add(&cascade! {
+                gtk::Button::with_label(label);
+                ..connect_clicked(clone!(@weak widget => move |_| {
+                    // XXX shift self
+                    widget.inner().mods.set(mod_);
+                }));
+            });
         }
 
         let layer_button_box = cascade! {

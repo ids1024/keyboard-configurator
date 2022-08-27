@@ -20,6 +20,12 @@ bitflags! {
     }
 }
 
+impl Default for Mods {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl Mods {
     // Convert single modifier from name
     pub fn from_mod_str(s: &str) -> Option<Self> {
