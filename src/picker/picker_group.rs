@@ -1,12 +1,11 @@
 use cascade::cascade;
 use gtk::{pango, prelude::*};
-use std::rc::Rc;
 
 use super::PickerKey;
 
 pub(super) struct PickerGroup {
     /// Name of keys in this group
-    keys: Vec<Rc<PickerKey>>,
+    keys: Vec<PickerKey>,
     pub vbox: gtk::Box,
     flow_box: gtk::FlowBox,
 }
@@ -48,8 +47,8 @@ impl PickerGroup {
         }
     }
 
-    pub fn add_key(&mut self, key: Rc<PickerKey>) {
-        self.flow_box.add(&key.gtk);
+    pub fn add_key(&mut self, key: PickerKey) {
+        self.flow_box.add(&key);
         self.keys.push(key);
     }
 

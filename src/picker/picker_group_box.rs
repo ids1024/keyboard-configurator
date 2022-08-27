@@ -6,7 +6,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use once_cell::sync::Lazy;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap};
 
 use backend::{DerefCell, Keycode};
 
@@ -15,22 +15,11 @@ use super::{picker_group::PickerGroup, picker_json::picker_json, picker_key::Pic
 const DEFAULT_COLS: usize = 3;
 const HSPACING: i32 = 64;
 const VSPACING: i32 = 32;
-const PICKER_CSS: &str = r#"
-button {
-    margin: 0;
-    padding: 0;
-}
-
-.selected {
-    border-color: #fbb86c;
-    border-width: 4px;
-}
-"#;
 
 #[derive(Default)]
 pub struct PickerGroupBoxInner {
     groups: DerefCell<Vec<PickerGroup>>,
-    keys: DerefCell<HashMap<String, Rc<PickerKey>>>,
+    keys: DerefCell<HashMap<String, PickerKey>>,
     selected: RefCell<Vec<Keycode>>,
 }
 
@@ -214,8 +203,8 @@ impl PickerGroupBox {
         let picker = self;
         for group in self.inner().groups.iter() {
             for key in group.keys() {
-                let button = &key.gtk;
-                let name = key.name.to_string();
+                let button = &key;
+                let name = key.name().to_string();
                 button.connect_clicked(clone!(@weak picker => @default-panic, move |_| {
                     // XXX somehow detect if shift is held?
                     picker.emit_by_name::<()>("key-pressed", &[&name]);
@@ -234,7 +223,7 @@ impl PickerGroupBox {
     fn get_button(&self, scancode_name: &Keycode) -> Option<&gtk::Button> {
         // XXX mods, etc.
         if let Keycode::Basic(_, scancode_name) = scancode_name {
-            self.inner().keys.get(scancode_name).map(|k| &k.gtk)
+            self.inner().keys.get(scancode_name).map(|k| k.upcast_ref())
         } else {
             None
         }
@@ -244,8 +233,8 @@ impl PickerGroupBox {
     pub(crate) fn set_key_visibility<F: Fn(&str) -> bool>(&self, f: F) {
         for group in self.inner().groups.iter() {
             let group_visible = group.keys().fold(false, |group_visible, key| {
-                key.gtk.set_visible(f(&key.name));
-                group_visible || key.gtk.get_visible()
+                key.set_visible(f(&key.name()));
+                group_visible || key.get_visible()
             });
 
             group.vbox.set_visible(group_visible);
@@ -255,7 +244,7 @@ impl PickerGroupBox {
 
     pub(crate) fn set_key_sensitivity<F: Fn(&str) -> bool>(&self, f: F) {
         for key in self.inner().keys.values() {
-            key.gtk.set_sensitive(f(&key.name));
+            key.set_sensitive(f(&key.name()));
         }
     }
 
