@@ -30,7 +30,7 @@ impl PickerGroup {
             ..set_row_spacing(4);
             ..set_max_children_per_line(cols);
             ..set_min_children_per_line(cols);
-            ..set_filter_func(Some(Box::new(|child: &gtk::FlowBoxChild| child.child().unwrap().is_visible())));
+            ..set_filter_func(Some(Box::new(|child: &gtk::FlowBoxChild| child.child().unwrap().get_visible())));
             ..show();
         };
 
