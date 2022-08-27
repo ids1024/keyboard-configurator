@@ -64,7 +64,8 @@ impl Mods {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, glib::Boxed)]
+#[boxed_type(name = "S76Keycode")]
 pub enum Keycode {
     Basic(Mods, String),
     MT(Mods, String),

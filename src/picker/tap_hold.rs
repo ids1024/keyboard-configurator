@@ -1,11 +1,12 @@
 use cascade::cascade;
 use gtk::{
-    glib::{self, clone},
+    glib::{self, clone, subclass::Signal},
     pango,
     prelude::*,
     subclass::prelude::*,
 };
-use std::cell::Cell;
+use once_cell::sync::Lazy;
+use std::cell::{Cell, RefCell};
 
 use super::{picker_group_box::PickerGroupBox, SCANCODE_LABELS};
 use backend::{Keycode, Mods};
@@ -25,6 +26,7 @@ static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCE
 #[derive(Default)]
 pub struct TapHoldInner {
     mods: Cell<Mods>,
+    keycode: RefCell<Option<String>>,
 }
 
 #[glib::object_subclass]
@@ -35,6 +37,18 @@ impl ObjectSubclass for TapHoldInner {
 }
 
 impl ObjectImpl for TapHoldInner {
+    fn signals() -> &'static [Signal] {
+        static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            vec![Signal::builder(
+                "selected",
+                &[Keycode::static_type().into()],
+                glib::Type::UNIT.into(),
+            )
+            .build()]
+        });
+        SIGNALS.as_ref()
+    }
+
     fn constructed(&self, widget: &Self::Type) {
         self.parent_constructed(widget);
 
@@ -42,8 +56,10 @@ impl ObjectImpl for TapHoldInner {
 
         let picker_group_box = cascade! {
             PickerGroupBox::new("basics");
-            ..connect_key_pressed(move |name| {
-            });
+            ..connect_key_pressed(clone!(@weak widget => move |name| {
+                *widget.inner().keycode.borrow_mut() = Some(name);
+                widget.update();
+            }));
             // Correct?
             ..set_key_visibility(|name| layout.scancode_from_name(&Keycode::Basic(Mods::empty(), name.to_string())).map_or(false, |code| code <= 0xff));
         };
@@ -58,7 +74,9 @@ impl ObjectImpl for TapHoldInner {
                 gtk::Button::with_label(label);
                 ..connect_clicked(clone!(@weak widget => move |_| {
                     // XXX shift self
+                    // XXX mark selected
                     widget.inner().mods.set(mod_);
+                    widget.update();
                 }));
             });
         }
@@ -115,5 +133,21 @@ impl TapHold {
 
     fn inner(&self) -> &TapHoldInner {
         TapHoldInner::from_instance(self)
+    }
+
+    fn update(&self) {
+        let mods = self.inner().mods.get();
+        if !mods.is_empty() {
+            let keycode = self.inner().keycode.borrow();
+            let keycode = keycode.as_deref().unwrap_or("NONE");
+            self.emit_by_name::<()>("selected", &[&Keycode::MT(mods, keycode.to_string())]);
+        }
+    }
+
+    pub fn connect_selected<F: Fn(Keycode) + 'static>(&self, cb: F) -> glib::SignalHandlerId {
+        self.connect_local("selected", false, move |values| {
+            cb(values[1].get::<Keycode>().unwrap());
+            None
+        })
     }
 }

@@ -69,12 +69,19 @@ impl ObjectImpl for PickerInner {
             }));
         };
 
+        let tap_hold = cascade! {
+            tap_hold::TapHold::new();
+            ..connect_selected(clone!(@weak picker => move |keycode| {
+                picker.set_keycode(keycode);
+            }));
+        };
+
         // XXX translate
         let stack = cascade! {
             gtk::Stack::new();
             ..add_titled(&basics_group_box, "basics", "Basics");
             ..add_titled(&extras_group_box, "extras", "Extras");
-            ..add_titled(&tap_hold::TapHold::new(), "tap-hold", "Tap-Hold");
+            ..add_titled(&tap_hold, "tap-hold", "Tap-Hold");
         };
 
         let stack_switcher = cascade! {
@@ -185,23 +192,27 @@ impl Picker {
     }
 
     fn key_pressed(&self, name: String) {
+        let shift = self.inner().shift.get();
+        // TODO handle shift
+        let keycode = Keycode::Basic(Mods::empty(), name);
+        self.set_keycode(keycode);
+    }
+
+    fn set_keycode(&self, keycode: Keycode) {
         let kb = match self.inner().keyboard.borrow().clone() {
             Some(kb) => kb,
             None => {
                 return;
             }
         };
+
         let layer = kb.layer();
-
-        let shift = self.inner().shift.get();
-
         if let Some(layer) = layer {
             let futures = FuturesUnordered::new();
             for i in kb.selected().iter() {
                 let i = *i;
-                // TODO handle shift
-                futures.push(clone!(@strong kb, @strong name => async move {
-                    kb.keymap_set(i, layer, &Keycode::Basic(Mods::empty(), name)).await;
+                futures.push(clone!(@strong kb, @strong keycode => async move {
+                    kb.keymap_set(i, layer, &keycode).await;
                 }));
             }
             glib::MainContext::default().spawn_local(async { futures.collect::<()>().await });
