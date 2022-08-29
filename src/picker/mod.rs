@@ -26,6 +26,8 @@ use picker_json::picker_json;
 use picker_key::PickerKey;
 use tap_hold::TapHold;
 
+pub use tap_hold::LAYERS;
+
 pub static SCANCODE_LABELS: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let mut labels = HashMap::new();
     for group in picker_json() {

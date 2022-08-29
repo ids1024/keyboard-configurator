@@ -1,5 +1,5 @@
 use crate::fl;
-use crate::picker::SCANCODE_LABELS;
+use crate::picker::{LAYERS, SCANCODE_LABELS};
 use backend::{Key, Keycode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -121,7 +121,11 @@ fn keycode_label(keycode: &Keycode) -> Option<String> {
             label.push_str(keycode_label);
             Some(label)
         }
-        // TODO
-        Keycode::LT(_layer, _keycode) => None,
+        Keycode::LT(layer, keycode) => {
+            let layer_id = *LAYERS.get(usize::from(*layer))?;
+            let layer_label = SCANCODE_LABELS.get(layer_id)?;
+            let keycode_label = SCANCODE_LABELS.get(keycode)?;
+            Some(format!("{}\n{}", layer_label, keycode_label))
+        }
     }
 }

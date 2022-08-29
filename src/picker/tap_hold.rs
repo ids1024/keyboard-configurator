@@ -33,7 +33,7 @@ static MODIFIERS: &[&str] = &[
     "RIGHT_SUPER",
     "RIGHT_ALT",
 ];
-static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCESS_4"];
+pub static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCESS_4"];
 
 #[derive(Default)]
 pub struct TapHoldInner {
