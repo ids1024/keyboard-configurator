@@ -1,5 +1,13 @@
 use cascade::cascade;
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{
+    gdk,
+    glib::{
+        self,
+        translate::{from_glib, ToGlibPtr},
+    },
+    prelude::*,
+    subclass::prelude::*,
+};
 
 use backend::DerefCell;
 
@@ -70,6 +78,31 @@ impl PickerKey {
             self.style_context().add_class("selected");
         } else {
             self.style_context().remove_class("selected");
+        }
+    }
+
+    pub fn connect_clicked_with_shift<F: Fn(&Self, bool) + 'static>(&self, f: F) {
+        self.connect_clicked(move |widget| {
+            let shift = gtk::current_event()
+                .and_then(|x| event_state(&x))
+                .map_or(false, |x| x.contains(gdk::ModifierType::SHIFT_MASK));
+            f(widget, shift)
+        });
+    }
+}
+
+// Work around binding bug
+// https://github.com/gtk-rs/gtk3-rs/pull/769
+pub fn event_state(evt: &gdk::Event) -> Option<gdk::ModifierType> {
+    unsafe {
+        let mut state = std::mem::MaybeUninit::uninit();
+        if from_glib(gdk::ffi::gdk_event_get_state(
+            evt.to_glib_none().0,
+            state.as_mut_ptr(),
+        )) {
+            Some(from_glib(state.assume_init() as u32))
+        } else {
+            None
         }
     }
 }

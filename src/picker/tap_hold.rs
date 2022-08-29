@@ -11,6 +11,18 @@ use std::cell::{Cell, RefCell};
 use super::{picker_group_box::PickerGroupBox, PickerKey, SCANCODE_LABELS};
 use backend::{DerefCell, Keycode, Mods};
 
+#[derive(Clone, Copy)]
+enum Hold {
+    Mods(Mods),
+    Layer(u8),
+}
+
+impl Default for Hold {
+    fn default() -> Self {
+        Self::Mods(Mods::default())
+    }
+}
+
 static MODIFIERS: &[&str] = &[
     "LEFT_SHIFT",
     "LEFT_CTRL",
@@ -25,9 +37,11 @@ static LAYERS: &[&str] = &["LAYER_ACCESS_1", "FN", "LAYER_ACCESS_3", "LAYER_ACCE
 
 #[derive(Default)]
 pub struct TapHoldInner {
-    mods: Cell<Mods>,
+    hold: Cell<Hold>,
     keycode: RefCell<Option<String>>,
     mod_buttons: DerefCell<Vec<PickerKey>>,
+    layer_buttons: DerefCell<Vec<PickerKey>>,
+    picker_group_box: DerefCell<PickerGroupBox>,
 }
 
 #[glib::object_subclass]
@@ -74,10 +88,14 @@ impl ObjectImpl for TapHoldInner {
             let mod_ = Mods::from_mod_str(*i).unwrap();
             let button = cascade! {
                 PickerKey::new(i, label, 2);
-                ..connect_clicked(clone!(@weak widget => move |_| {
-                    // XXX shift self
-                    // XXX mark selected
-                    widget.inner().mods.set(mod_);
+                ..connect_clicked_with_shift(clone!(@weak widget => move |_, shift| {
+                    let mut new_mods = mod_;
+                    if shift {
+                        if let Hold::Mods(mods) = widget.inner().hold.get() {
+                            new_mods |= mods;
+                        }
+                    }
+                    widget.inner().hold.set(Hold::Mods(new_mods));
                     widget.update();
                 }));
             };
@@ -89,10 +107,21 @@ impl ObjectImpl for TapHoldInner {
         let layer_button_box = cascade! {
             gtk::Box::new(gtk::Orientation::Horizontal, 0);
         };
-        for i in LAYERS {
+        let mut layer_buttons = Vec::new();
+        for (n, i) in LAYERS.iter().enumerate() {
             let label = SCANCODE_LABELS.get(*i).unwrap();
-            layer_button_box.add(&PickerKey::new(i, label, 2));
+            let button = cascade! {
+                PickerKey::new(i, label, 2);
+                ..connect_clicked(clone!(@weak widget => move |_| {
+                    widget.inner().hold.set(Hold::Layer(n as u8));
+                    widget.update();
+
+                }));
+            };
+            layer_button_box.add(&button);
+            layer_buttons.push(button);
         }
+        self.layer_buttons.set(layer_buttons);
 
         // TODO: select monifier/layer; multiple select; when both are selected, set keycode
 
@@ -119,6 +148,8 @@ impl ObjectImpl for TapHoldInner {
             });
             ..add(&picker_group_box);
         };
+
+        self.picker_group_box.set(picker_group_box);
     }
 }
 
@@ -141,11 +172,17 @@ impl TapHold {
     }
 
     fn update(&self) {
-        let mods = self.inner().mods.get();
-        if !mods.is_empty() {
-            let keycode = self.inner().keycode.borrow();
-            let keycode = keycode.as_deref().unwrap_or("NONE");
-            self.emit_by_name::<()>("selected", &[&Keycode::MT(mods, keycode.to_string())]);
+        let keycode = self.inner().keycode.borrow();
+        let keycode = keycode.as_deref().unwrap_or("NONE");
+        match self.inner().hold.get() {
+            Hold::Mods(mods) => {
+                if !mods.is_empty() {
+                    self.emit_by_name::<()>("selected", &[&Keycode::MT(mods, keycode.to_string())]);
+                }
+            }
+            Hold::Layer(layer) => {
+                self.emit_by_name::<()>("selected", &[&Keycode::LT(layer, keycode.to_string())]);
+            }
         }
     }
 
@@ -159,15 +196,17 @@ impl TapHold {
 
     pub(crate) fn set_selected(&self, scancode_names: Vec<Keycode>) {
         // XXX how to handle > 1?
-        let (mods, keycode) = if scancode_names.len() == 1 {
-            if let Keycode::MT(mods, keycode) = &scancode_names[0] {
-                (mods.clone(), Some(keycode))
-            } else {
-                (Mods::empty(), None)
+        let (mods, layer, keycode) = if scancode_names.len() == 1 {
+            match scancode_names.into_iter().next().unwrap() {
+                Keycode::MT(mods, keycode) => (mods, None, Some(keycode)),
+                Keycode::LT(layer, keycode) => (Mods::empty(), Some(layer), Some(keycode)),
+                Keycode::Basic(..) => Default::default(),
             }
         } else {
-            (Mods::empty(), None)
+            Default::default()
         };
+
+        // TODO how to deal with internal state?
 
         for i in self.inner().mod_buttons.iter() {
             // XXX left vs right
@@ -177,6 +216,16 @@ impl TapHold {
             );
         }
 
-        // set_selected on group box
+        for (n, i) in self.inner().layer_buttons.iter().enumerate() {
+            i.set_selected(Some(n as u8) == layer);
+        }
+
+        if let Some(keycode) = keycode {
+            self.inner()
+                .picker_group_box
+                .set_selected(vec![Keycode::Basic(Mods::empty(), keycode)]);
+        } else {
+            self.inner().picker_group_box.set_selected(Vec::new());
+        }
     }
 }
