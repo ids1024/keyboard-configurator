@@ -35,7 +35,7 @@ impl ObjectImpl for PickerGroupBoxInner {
         static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
             vec![Signal::builder(
                 "key-pressed",
-                &[String::static_type().into()],
+                &[String::static_type().into(), bool::static_type().into()],
                 glib::Type::UNIT.into(),
             )
             .build()]
@@ -205,17 +205,16 @@ impl PickerGroupBox {
             for key in group.keys() {
                 let button = &key;
                 let name = key.name().to_string();
-                button.connect_clicked(clone!(@weak picker => @default-panic, move |_| {
-                    // XXX somehow detect if shift is held?
-                    picker.emit_by_name::<()>("key-pressed", &[&name]);
+                button.connect_clicked_with_shift(clone!(@weak picker => @default-panic, move |_, shift| {
+                    picker.emit_by_name::<()>("key-pressed", &[&name, &shift]);
                 }));
             }
         }
     }
 
-    pub fn connect_key_pressed<F: Fn(String) + 'static>(&self, cb: F) -> SignalHandlerId {
+    pub fn connect_key_pressed<F: Fn(String, bool) + 'static>(&self, cb: F) -> SignalHandlerId {
         self.connect_local("key-pressed", false, move |values| {
-            cb(values[1].get::<String>().unwrap());
+            cb(values[1].get::<String>().unwrap(), values[2].get::<bool>().unwrap());
             None
         })
     }

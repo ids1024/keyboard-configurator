@@ -61,15 +61,15 @@ impl ObjectImpl for PickerInner {
 
         let basics_group_box = cascade! {
             PickerGroupBox::new("basics");
-            ..connect_key_pressed(clone!(@weak picker => move |name| {
-                picker.key_pressed(name)
+            ..connect_key_pressed(clone!(@weak picker => move |name, shift| {
+                picker.key_pressed(name, shift)
             }));
         };
 
         let extras_group_box = cascade! {
             PickerGroupBox::new("extras");
-            ..connect_key_pressed(clone!(@weak picker => move |name| {
-                picker.key_pressed(name)
+            ..connect_key_pressed(clone!(@weak picker => move |name, shift| {
+                picker.key_pressed(name, shift)
             }));
         };
 
@@ -197,10 +197,13 @@ impl Picker {
         *self.inner().selected.borrow_mut() = scancode_names;
     }
 
-    fn key_pressed(&self, name: String) {
-        let shift = self.inner().shift.get();
-        // TODO handle shift
-        let keycode = Keycode::Basic(Mods::empty(), name);
+    fn key_pressed(&self, name: String, shift: bool) {
+        // TODO shift
+        let keycode = if let Some(mod_) = Mods::from_mod_str(&name) {
+            Keycode::Basic(mod_, "NONE".to_string())
+        } else {
+            Keycode::Basic(Mods::empty(), name)
+        };
         self.set_keycode(keycode);
     }
 

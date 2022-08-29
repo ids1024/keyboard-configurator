@@ -71,7 +71,7 @@ impl ObjectImpl for TapHoldInner {
 
         let picker_group_box = cascade! {
             PickerGroupBox::new("basics");
-            ..connect_key_pressed(clone!(@weak widget => move |name| {
+            ..connect_key_pressed(clone!(@weak widget => move |name, _shift| {
                 *widget.inner().keycode.borrow_mut() = Some(name);
                 widget.update();
             }));
