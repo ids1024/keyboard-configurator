@@ -220,15 +220,6 @@ impl PickerGroupBox {
         })
     }
 
-    fn get_button(&self, scancode_name: &Keycode) -> Option<&PickerKey> {
-        // XXX mods, etc.
-        if let Keycode::Basic(_, scancode_name) = scancode_name {
-            self.inner().keys.get(scancode_name)
-        } else {
-            None
-        }
-    }
-
     // XXX need to enable/disable features; show/hide just plain keycodes
     pub(crate) fn set_key_visibility<F: Fn(&str) -> bool>(&self, f: F) {
         for group in self.inner().groups.iter() {
@@ -249,21 +240,29 @@ impl PickerGroupBox {
     }
 
     pub(crate) fn set_selected(&self, scancode_names: Vec<Keycode>) {
-        let mut selected = self.inner().selected.borrow_mut();
+        for button in self.inner().keys.values() {
+            button.set_selected(false);
+        }
 
-        for i in selected.iter() {
-            if let Some(button) = self.get_button(i) {
-                button.set_selected(false);
+        for i in scancode_names.iter() {
+            match i {
+                Keycode::Basic(mods, scancode_name) => {
+                    if let Some(button) = self.inner().keys.get(scancode_name) {
+                        if !(scancode_name == "NONE" && !mods.is_empty()) {
+                            button.set_selected(true);
+                        }
+                    }
+                    for scancode_name in mods.mod_names() {
+                        if let Some(button) = self.inner().keys.get(scancode_name) {
+                            button.set_selected(true);
+                        }
+                    }
+                }
+                Keycode::MT(..) | Keycode::LT(..) => {}
             }
         }
 
-        *selected = scancode_names;
-
-        for i in selected.iter() {
-            if let Some(button) = self.get_button(i) {
-                button.set_selected(true);
-            }
-        }
+        *self.inner().selected.borrow_mut() = scancode_names;
     }
 
     fn rows_for_width(&self, container_width: i32) -> Vec<&[PickerGroup]> {
