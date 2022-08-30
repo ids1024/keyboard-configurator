@@ -246,6 +246,8 @@ impl Picker {
     }
 
     fn invalidate_sensitivity(&self) {
+        return;
+
         let shift = self.inner().shift.get();
 
         let mut allow_mods = true;
