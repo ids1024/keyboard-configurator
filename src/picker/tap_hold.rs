@@ -92,7 +92,7 @@ impl ObjectImpl for TapHoldInner {
                     let mut new_mods = mod_;
                     if shift {
                         if let Hold::Mods(mods) = widget.inner().hold.get() {
-                            new_mods |= mods;
+                            new_mods = mods.toggle_mod(mod_);
                         }
                     }
                     widget.inner().hold.set(Hold::Mods(new_mods));

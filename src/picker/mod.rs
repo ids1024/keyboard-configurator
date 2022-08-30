@@ -198,8 +198,25 @@ impl Picker {
     }
 
     fn key_pressed(&self, name: String, shift: bool) {
-        // TODO shift
-        let keycode = if let Some(mod_) = Mods::from_mod_str(&name) {
+        let mod_ = Mods::from_mod_str(&name);
+        if shift {
+            let selected = self.inner().selected.borrow();
+            if selected.len() == 1 {
+                if let Keycode::Basic(mods, scancode_name) = &selected[0] {
+                    if let Some(mod_) = mod_ {
+                        self.set_keycode(Keycode::Basic(
+                            mods.toggle_mod(mod_),
+                            scancode_name.to_string(),
+                        ));
+                        return;
+                    } else if scancode_name == "NONE" {
+                        self.set_keycode(Keycode::Basic(*mods, name));
+                        return;
+                    }
+                }
+            }
+        }
+        let keycode = if let Some(mod_) = mod_ {
             Keycode::Basic(mod_, "NONE".to_string())
         } else {
             Keycode::Basic(Mods::empty(), name)

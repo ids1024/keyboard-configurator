@@ -62,6 +62,20 @@ impl Mods {
             .iter()
             .filter_map(move |i| (self & (*i | Self::RIGHT)).as_mod_str())
     }
+
+    pub fn toggle_mod(self, other: Self) -> Self {
+        let other_key = other & !Self::RIGHT;
+        if !self.contains(other_key) {
+            self | other
+        } else {
+            let key = self & !other_key;
+            if key == Self::RIGHT {
+                Self::empty()
+            } else {
+                key
+            }
+        }
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, glib::Boxed)]
@@ -101,16 +115,39 @@ impl Keycode {
             false
         }
     }
-
-    pub fn is_mod(&self) -> bool {
-        false // XXX
-    }
 }
 
 impl std::fmt::Display for Keycode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // XXX
-        write!(f, "{:?}", self)
+        match self {
+            Self::Basic(mods, scancode_name) => {
+                let mut has_mod = false;
+                for mod_name in mods.mod_names() {
+                    if has_mod {
+                        write!(f, " | ")?;
+                    }
+                    write!(f, "{}", mod_name)?;
+                }
+                if !(scancode_name == "NONE" && has_mod) {
+                    write!(f, "{}", scancode_name)?;
+                }
+            }
+            Self::MT(mods, scancode_name) => {
+                write!(f, "MT(")?;
+                let mut has_mod = false;
+                for mod_name in mods.mod_names() {
+                    if has_mod {
+                        write!(f, " | ")?;
+                    }
+                    write!(f, "{}", mod_name)?;
+                }
+                write!(f, ", {})", scancode_name)?;
+            }
+            Self::LT(layer, scancode_name) => {
+                write!(f, "LT({}, {})", layer, scancode_name)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -132,10 +169,6 @@ fn tokenize(mut s: &str) -> impl Iterator<Item = &str> {
         Some(tok)
     })
 }
-
-// Use Vec or bitflags; need to represent left/right. Could use struct of bools. Or vec of enum.
-// Bitflags may be easier to deal with.
-fn parse_mods() {}
 
 fn parse_mt<'a>(mut tokens: impl Iterator<Item = &'a str>) -> Option<Keycode> {
     if tokens.next() != Some("(") {

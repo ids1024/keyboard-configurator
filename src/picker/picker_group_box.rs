@@ -205,16 +205,21 @@ impl PickerGroupBox {
             for key in group.keys() {
                 let button = &key;
                 let name = key.name().to_string();
-                button.connect_clicked_with_shift(clone!(@weak picker => @default-panic, move |_, shift| {
-                    picker.emit_by_name::<()>("key-pressed", &[&name, &shift]);
-                }));
+                button.connect_clicked_with_shift(
+                    clone!(@weak picker => @default-panic, move |_, shift| {
+                        picker.emit_by_name::<()>("key-pressed", &[&name, &shift]);
+                    }),
+                );
             }
         }
     }
 
     pub fn connect_key_pressed<F: Fn(String, bool) + 'static>(&self, cb: F) -> SignalHandlerId {
         self.connect_local("key-pressed", false, move |values| {
-            cb(values[1].get::<String>().unwrap(), values[2].get::<bool>().unwrap());
+            cb(
+                values[1].get::<String>().unwrap(),
+                values[2].get::<bool>().unwrap(),
+            );
             None
         })
     }
